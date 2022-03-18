@@ -2,8 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\src\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>True</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>
