@@ -11,7 +11,7 @@ Read more about Kiota [here](https://github.com/microsoft/kiota/blob/main/README
 ## Using the Kiota Http Library for dotnet
 
 ```shell
-dotnet add package Microsoft.Kiota.Http.HttpClientLibrary
+dotnet add package Microsoft.Kiota.Http.HttpClientLibrary --prerelease
 ```
 
 ## Debugging
