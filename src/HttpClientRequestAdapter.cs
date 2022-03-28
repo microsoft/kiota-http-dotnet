@@ -13,6 +13,7 @@ using Microsoft.Kiota.Abstractions.Serialization;
 using Microsoft.Kiota.Abstractions.Store;
 using Microsoft.Kiota.Abstractions.Authentication;
 using System.Threading;
+using System.Net;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -67,10 +68,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             requestInfo.Content?.Dispose();
             if(responseHandler == null)
             {
-                await ThrowFailedResponse(response, errorMapping);
-                var rootNode = await GetRootParseNode(response);
-                var result = rootNode.GetCollectionOfObjectValues<ModelType>(factory);
-                return result;
+                try {
+                    await ThrowFailedResponse(response, errorMapping);
+                    if(shouldReturnNull(response)) return default;
+                    var rootNode = await GetRootParseNode(response);
+                    var result = rootNode.GetCollectionOfObjectValues<ModelType>(factory);
+                    return result;
+                } finally {
+                    await purgeAsync(response);
+                }
             }
             else
                 return await responseHandler.HandleResponseAsync<HttpResponseMessage, IEnumerable<ModelType>>(response, errorMapping);
@@ -88,10 +94,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             requestInfo.Content?.Dispose();
             if(responseHandler == null)
             {
-                await ThrowFailedResponse(response, errorMapping);
-                var rootNode = await GetRootParseNode(response);
-                var result = rootNode.GetCollectionOfPrimitiveValues<ModelType>();
-                return result;
+                try {
+                    await ThrowFailedResponse(response, errorMapping);
+                    if(shouldReturnNull(response)) return default;
+                    var rootNode = await GetRootParseNode(response);
+                    var result = rootNode.GetCollectionOfPrimitiveValues<ModelType>();
+                    return result;
+                } finally {
+                    await purgeAsync(response);
+                }
             }
             else
                 return await responseHandler.HandleResponseAsync<HttpResponseMessage, IEnumerable<ModelType>>(response, errorMapping);
@@ -111,10 +122,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             requestInfo.Content?.Dispose();
             if(responseHandler == null)
             {
-                await ThrowFailedResponse(response, errorMapping);
-                var rootNode = await GetRootParseNode(response);
-                var result = rootNode.GetObjectValue<ModelType>(factory);
-                return result;
+                try {
+                    await ThrowFailedResponse(response, errorMapping);
+                    if(shouldReturnNull(response)) return default;
+                    var rootNode = await GetRootParseNode(response);
+                    var result = rootNode.GetObjectValue<ModelType>(factory);
+                    return result;
+                } finally {
+                    await purgeAsync(response);
+                }
             }
             else
                 return await responseHandler.HandleResponseAsync<HttpResponseMessage, ModelType>(response, errorMapping);
@@ -133,70 +149,75 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             requestInfo.Content?.Dispose();
             if(responseHandler == null)
             {
-                await ThrowFailedResponse(response, errorMapping);
-                var modelType = typeof(ModelType);
-                if(modelType == typeof(Stream))
-                {
-                    return (ModelType)(await response.Content.ReadAsStreamAsync() as object);
-                }
-                else
-                {
-                    var rootNode = await GetRootParseNode(response);
-                    object result;
-                    if(modelType == typeof(bool?))
+                try {
+                    await ThrowFailedResponse(response, errorMapping);
+                    if(shouldReturnNull(response)) return default;
+                    var modelType = typeof(ModelType);
+                    if(modelType == typeof(Stream))
                     {
-                        result = rootNode.GetBoolValue();
+                        return (ModelType)(await response.Content.ReadAsStreamAsync() as object);
                     }
-                    else if(modelType == typeof(byte?))
+                    else
                     {
-                        result = rootNode.GetByteValue();
+                        var rootNode = await GetRootParseNode(response);
+                        object result;
+                        if(modelType == typeof(bool?))
+                        {
+                            result = rootNode.GetBoolValue();
+                        }
+                        else if(modelType == typeof(byte?))
+                        {
+                            result = rootNode.GetByteValue();
+                        }
+                        else if(modelType == typeof(sbyte?))
+                        {
+                            result = rootNode.GetSbyteValue();
+                        }
+                        else if(modelType == typeof(string))
+                        {
+                            result = rootNode.GetStringValue();
+                        }
+                        else if(modelType == typeof(int?))
+                        {
+                            result = rootNode.GetIntValue();
+                        }
+                        else if(modelType == typeof(float?))
+                        {
+                            result = rootNode.GetFloatValue();
+                        }
+                        else if(modelType == typeof(long?))
+                        {
+                            result = rootNode.GetLongValue();
+                        }
+                        else if(modelType == typeof(double?))
+                        {
+                            result = rootNode.GetDoubleValue();
+                        }
+                        else if(modelType == typeof(decimal?))
+                        {
+                            result = rootNode.GetDecimalValue();
+                        }
+                        else if(modelType == typeof(Guid?))
+                        {
+                            result = rootNode.GetGuidValue();
+                        }
+                        else if(modelType == typeof(DateTimeOffset?))
+                        {
+                            result = rootNode.GetDateTimeOffsetValue();
+                        }
+                        else if(modelType == typeof(TimeSpan?))
+                        {
+                            result = rootNode.GetTimeSpanValue();
+                        }
+                        else if(modelType == typeof(Date?))
+                        {
+                            result = rootNode.GetDateValue();
+                        }
+                        else throw new InvalidOperationException("error handling the response, unexpected type");
+                        return (ModelType)result;
                     }
-                    else if(modelType == typeof(sbyte?))
-                    {
-                        result = rootNode.GetSbyteValue();
-                    }
-                    else if(modelType == typeof(string))
-                    {
-                        result = rootNode.GetStringValue();
-                    }
-                    else if(modelType == typeof(int?))
-                    {
-                        result = rootNode.GetIntValue();
-                    }
-                    else if(modelType == typeof(float?))
-                    {
-                        result = rootNode.GetFloatValue();
-                    }
-                    else if(modelType == typeof(long?))
-                    {
-                        result = rootNode.GetLongValue();
-                    }
-                    else if(modelType == typeof(double?))
-                    {
-                        result = rootNode.GetDoubleValue();
-                    }
-                    else if(modelType == typeof(decimal?))
-                    {
-                        result = rootNode.GetDecimalValue();
-                    }
-                    else if(modelType == typeof(Guid?))
-                    {
-                        result = rootNode.GetGuidValue();
-                    }
-                    else if(modelType == typeof(DateTimeOffset?))
-                    {
-                        result = rootNode.GetDateTimeOffsetValue();
-                    }
-                    else if(modelType == typeof(TimeSpan?))
-                    {
-                        result = rootNode.GetTimeSpanValue();
-                    }
-                    else if(modelType == typeof(Date?))
-                    {
-                        result = rootNode.GetDateValue();
-                    }
-                    else throw new InvalidOperationException("error handling the response, unexpected type");
-                    return (ModelType)result;
+                } finally {
+                    await purgeAsync(response);
                 }
             }
             else
@@ -216,11 +237,27 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             requestInfo.Content?.Dispose();
             if(responseHandler == null)
             {
-                await ThrowFailedResponse(response, errorMapping);
-                response.Dispose();
+                try {
+                    await ThrowFailedResponse(response, errorMapping);
+                } finally {
+                    await purgeAsync(response);
+                }
             }
             else
                 await responseHandler.HandleResponseAsync<HttpResponseMessage, object>(response, errorMapping);
+        }
+        private async Task purgeAsync(HttpResponseMessage response)
+        {
+            if(response.Content != null)
+            {
+                using var discard = await response.Content.ReadAsStreamAsync();
+                response.Content.Dispose();
+            }
+            response.Dispose();
+        }
+        private bool shouldReturnNull(HttpResponseMessage response)
+        {
+            return response.StatusCode == HttpStatusCode.NoContent;
         }
         private async Task ThrowFailedResponse(HttpResponseMessage response, Dictionary<string, ParsableFactory<IParsable>> errorMapping)
         {
@@ -248,7 +285,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 throw new InvalidOperationException("no response content type header for deserialization");
             using var contentStream = await response.Content.ReadAsStreamAsync();
             var rootNode = pNodeFactory.GetRootParseNode(responseContentType, contentStream);
-            response.Dispose();
             return rootNode;
         }
         private async Task<HttpResponseMessage> GetHttpResponseMessage(RequestInformation requestInfo, CancellationToken cancellationToken)
