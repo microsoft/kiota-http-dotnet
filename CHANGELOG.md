@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added support for 204 no content responses
 
+### Changed
+
+- Fixed a bug where BaseUrl would not be set in some scenarios
+
 ## [1.0.0-preview.2] - 2022-03-18
 
 ### Changed
