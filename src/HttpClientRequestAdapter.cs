@@ -303,7 +303,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         }
         private void SetBaseUrlForRequestInformation(RequestInformation requestInfo)
         {
-            requestInfo.PathParameters.Add("baseurl", BaseUrl);
+            requestInfo.PathParameters.TryAdd("baseurl", BaseUrl);
         }
         /// <summary>
         /// Creates a <see cref="HttpRequestMessage"/> instance from a <see cref="RequestInformation"/> instance.
@@ -312,6 +312,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>A <see cref="HttpRequestMessage"/> instance</returns>
         public HttpRequestMessage GetRequestMessageFromRequestInformation(RequestInformation requestInfo)
         {
+            SetBaseUrlForRequestInformation(requestInfo);// this method can also be called from a different context so ensure the baseUrl is added.
             var message = new HttpRequestMessage
             {
                 Method = new HttpMethod(requestInfo.HttpMethod.ToString().ToUpperInvariant()),
