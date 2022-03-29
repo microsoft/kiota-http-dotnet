@@ -44,6 +44,26 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.IsAssignableFrom(backingStore.GetType(), BackingStoreFactorySingleton.Instance);
         }
 
+
+        [Fact]
+        public void GetRequestMessageFromRequestInformationWithBaseUrlTemplate()
+        {
+            // Arrange
+            requestAdapter.BaseUrl = "http://localhost";
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "{+baseurl}/me"
+            };
+
+            // Act
+            var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
+
+            // Assert
+            Assert.NotNull(requestMessage.RequestUri);
+            Assert.Contains("http://localhost/me", requestMessage.RequestUri.OriginalString);
+        }
+
         [Theory]
         [InlineData("select", new[] { "id", "displayName" }, "select=id,displayName")]
         [InlineData("count", true, "count=true")]
