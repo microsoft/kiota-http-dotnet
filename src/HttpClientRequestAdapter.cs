@@ -75,7 +75,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     var result = rootNode.GetCollectionOfObjectValues<ModelType>(factory);
                     return result;
                 } finally {
-                    await purgeAsync(response);
+                    await DrainAsync(response);
                 }
             }
             else
@@ -101,7 +101,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     var result = rootNode.GetCollectionOfPrimitiveValues<ModelType>();
                     return result;
                 } finally {
-                    await purgeAsync(response);
+                    await DrainAsync(response);
                 }
             }
             else
@@ -129,7 +129,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     var result = rootNode.GetObjectValue<ModelType>(factory);
                     return result;
                 } finally {
-                    await purgeAsync(response);
+                    await DrainAsync(response);
                 }
             }
             else
@@ -217,7 +217,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                         return (ModelType)result;
                     }
                 } finally {
-                    await purgeAsync(response);
+                    await DrainAsync(response);
                 }
             }
             else
@@ -240,13 +240,13 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 try {
                     await ThrowFailedResponse(response, errorMapping);
                 } finally {
-                    await purgeAsync(response);
+                    await DrainAsync(response);
                 }
             }
             else
                 await responseHandler.HandleResponseAsync<HttpResponseMessage, object>(response, errorMapping);
         }
-        private async Task purgeAsync(HttpResponseMessage response)
+        private async Task DrainAsync(HttpResponseMessage response)
         {
             if(response.Content != null)
             {
