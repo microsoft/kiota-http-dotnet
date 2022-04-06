@@ -1,10 +1,15 @@
 ﻿using System;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Abstractions.Store;
 using Moq;
+using Moq.Protected;
 using Xunit;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
@@ -117,6 +122,29 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             // Content type set correctly
             Assert.Equal("application/octet-stream", requestMessage.Content.Headers.ContentType.MediaType);
 
+        }
+
+        [Fact]
+        public async void SendStreamReturnsUsableStream() {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes("Test")))
+            });
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+
+            var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo);
+
+            Assert.True(response.CanRead);
+            Assert.Equal(4, response.Length);
         }
     }
 }

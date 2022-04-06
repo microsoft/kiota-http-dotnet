@@ -129,7 +129,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     var result = rootNode.GetObjectValue<ModelType>(factory);
                     return result;
                 } finally {
-                    await DrainAsync(response);
+                    if (typeof(ModelType) != typeof(Stream))
+                    {
+                        await DrainAsync(response);
+                    }
                 }
             }
             else
@@ -217,7 +220,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                         return (ModelType)result;
                     }
                 } finally {
-                    await DrainAsync(response);
+                    if (typeof(ModelType) != typeof(Stream))
+                    {
+                        await DrainAsync(response);
+                    }
                 }
             }
             else
