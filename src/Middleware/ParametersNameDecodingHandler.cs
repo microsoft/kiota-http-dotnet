@@ -19,7 +19,7 @@ public class ParametersNameDecodingHandler: DelegatingHandler
     /// <summary>
     /// The options to use when decoding parameters names in URLs
     /// </summary>
-    public ParametersNameDecodingOption EncodingOptions { get; set; }
+    internal ParametersNameDecodingOption EncodingOptions { get; set; }
     /// <summary>
     /// Constructs a new <see cref="ParametersNameDecodingHandler"/>
     /// </summary>
