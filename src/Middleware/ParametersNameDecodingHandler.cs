@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Kiota.Http.HttpClientLibrary.Extensions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
@@ -31,10 +32,11 @@ public class ParametersNameDecodingHandler: DelegatingHandler
     ///<inheritdoc/>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken)
     {
+        var options = httpRequestMessage.GetRequestOption<ParametersNameDecodingOption>() ?? EncodingOptions;
         if(!httpRequestMessage.RequestUri.Query.Contains('%') ||
-            EncodingOptions == null ||
-            !EncodingOptions.Enabled ||
-            !(EncodingOptions.ParametersToDecode?.Any() ?? false))
+            options == null ||
+            !options.Enabled ||
+            !(options.ParametersToDecode?.Any() ?? false))
         {
             return base.SendAsync(httpRequestMessage, cancellationToken);
         }
