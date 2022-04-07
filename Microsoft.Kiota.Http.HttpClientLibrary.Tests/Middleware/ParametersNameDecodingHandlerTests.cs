@@ -25,7 +25,7 @@ public class ParametersDecodingHandlerTests
     [InlineData("http://localhost?%24select=diplayName&api%2Dversion=2", "http://localhost/?$select=diplayName&api-version=2")]
     [InlineData("http://localhost?%24select=diplayName&api%7Eversion=2", "http://localhost/?$select=diplayName&api~version=2")]
     [InlineData("http://localhost?%24select=diplayName&api%2Eversion=2", "http://localhost/?$select=diplayName&api.version=2")]
-    [InlineData("http://localhost/path%2dsegment?%24select=diplayName&api%2Dversion=2", "http://localhost/path-segment/?$select=diplayName&api-version=2")] //it's URI decoding the path segment
+    [InlineData("http://localhost/path%2dsegment?%24select=diplayName&api%2Dversion=2", "http://localhost/path-segment?$select=diplayName&api-version=2")] //it's URI decoding the path segment
     [InlineData("http://localhost:888?%24select=diplayName&api%2Dversion=2", "http://localhost:888/?$select=diplayName&api-version=2")]
     [InlineData("http://localhost", "http://localhost/")]
     [Theory]
