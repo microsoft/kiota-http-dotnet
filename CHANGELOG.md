@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.0.0-preview.5] - 2022-04-07
+
+### Added
+
+- Added supports for decoding parameter names.
+
 ## [1.0.0-preview.4] - 2022-04-06
 
 ### Changed
