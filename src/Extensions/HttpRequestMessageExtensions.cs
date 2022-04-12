@@ -2,11 +2,12 @@
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
-using System.Collections.Generic;
+using System;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Kiota.Abstractions;
+using Microsoft.Kiota.Abstractions.Extensions;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
 {
@@ -45,12 +46,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
             var newRequest = new HttpRequestMessage(originalRequest.Method, originalRequest.RequestUri);
 
             // Copy request headers.
-            foreach(var (key, value) in originalRequest.Headers)
-                newRequest.Headers.TryAddWithoutValidation(key, value);
+            foreach(var header in originalRequest.Headers)
+                newRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
 
             // Copy request properties.
-            foreach(var (key, value) in originalRequest.Properties)
-                newRequest.Properties.TryAdd(key, value);
+            foreach(var property in originalRequest.Properties)
+                newRequest.Properties.TryAdd(property.Key, property.Value);
 
             // Set Content if previous request had one.
             if(originalRequest.Content != null)
@@ -64,9 +65,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
                 newRequest.Content = new StreamContent(contentStream);
 
                 // Copy content headers.
-                foreach(var (key, value) in originalRequest.Content.Headers)
+                foreach(var header in originalRequest.Content.Headers)
                 {
-                    newRequest.Content?.Headers.TryAddWithoutValidation(key, value);
+                    newRequest.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value);
                 }
             }
 
@@ -82,7 +83,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
         {
             HttpContent requestContent = httpRequestMessage.Content;
 
-            if((httpRequestMessage.Method == HttpMethod.Put || httpRequestMessage.Method == HttpMethod.Post || httpRequestMessage.Method == HttpMethod.Patch)
+            if((httpRequestMessage.Method == HttpMethod.Put || httpRequestMessage.Method == HttpMethod.Post || httpRequestMessage.Method.Method.Equals("PATCH", StringComparison.OrdinalIgnoreCase))
                && requestContent != null && (requestContent.Headers.ContentLength == null || (int)requestContent.Headers.ContentLength == -1))
             {
                 return false;

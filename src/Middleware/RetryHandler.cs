@@ -203,7 +203,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             {
                 HttpStatusCode.ServiceUnavailable => true,
                 HttpStatusCode.GatewayTimeout => true,
-                HttpStatusCode.TooManyRequests => true,
+                (HttpStatusCode)429 => true,
                 _ => false
             };
         }

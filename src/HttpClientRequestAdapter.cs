@@ -14,6 +14,7 @@ using Microsoft.Kiota.Abstractions.Store;
 using Microsoft.Kiota.Abstractions.Authentication;
 using System.Threading;
 using System.Net;
+using Microsoft.Kiota.Abstractions.Extensions;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -331,9 +332,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(requestInfo.Content != null)
                 message.Content = new StreamContent(requestInfo.Content);
             if(requestInfo.Headers?.Any() ?? false)
-                foreach(var (key,value) in requestInfo.Headers)
-                    if(!message.Headers.TryAddWithoutValidation(key, value) && message.Content != null)
-                        message.Content.Headers.TryAddWithoutValidation(key, value);// Try to add the headers we couldn't add to the HttpRequestMessage before to the HttpContent
+                foreach(var header in requestInfo.Headers)
+                    if(!message.Headers.TryAddWithoutValidation(header.Key, header.Value) && message.Content != null)
+                        message.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);// Try to add the headers we couldn't add to the HttpRequestMessage before to the HttpContent
 
             return message;
         }

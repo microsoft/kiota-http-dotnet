@@ -124,7 +124,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             });
             var throttleResponse = new HttpResponseMessage
             {
-                StatusCode = HttpStatusCode.TooManyRequests,
+                StatusCode = (HttpStatusCode)429,
                 Content = new StringContent(contentString, Encoding.UTF8, Json)
             };
             throttleResponse.Headers.RetryAfter = new RetryConditionHeaderValue(retry);

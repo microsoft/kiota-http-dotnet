@@ -62,7 +62,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 }
             }
             if(finalHandler != null)
-                handlers[^1].InnerHandler = finalHandler;
+                handlers[handlers.Length-1].InnerHandler = finalHandler;
             return handlers.First();
         }
         /// <summary>
