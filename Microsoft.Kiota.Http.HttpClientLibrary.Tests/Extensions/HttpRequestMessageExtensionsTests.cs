@@ -31,7 +31,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
             {
                 MaxRedirect = 7
             };
-            requestInfo.AddRequestOptions(redirectHandlerOption);
+            requestInfo.AddRequestOptions(new IRequestOption[] { redirectHandlerOption });
             // Act and get a request message
             var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
             var extractedOption = requestMessage.GetRequestOption<RedirectHandlerOption>();
@@ -92,7 +92,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
             {
                 MaxRedirect = 7
             };
-            requestInfo.AddRequestOptions(redirectHandlerOption);
+            requestInfo.AddRequestOptions(new IRequestOption[] { redirectHandlerOption });
             var originalRequest = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
             originalRequest.Content = new StringContent("contents");
 

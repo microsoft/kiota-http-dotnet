@@ -65,7 +65,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
                 }
             };
             // Configures the telemetry at the request level
-            requestInfo.AddRequestOptions(telemetryHandlerOption);
+            requestInfo.AddRequestOptions(new IRequestOption[] { telemetryHandlerOption });
             // Act and get a request message
             var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
             Assert.Empty(requestMessage.Headers);
