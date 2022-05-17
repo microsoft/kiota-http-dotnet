@@ -146,5 +146,35 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.True(response.CanRead);
             Assert.Equal(4, response.Length);
         }
+        [Fact]
+        public async void RetriesOnCAEResponse() {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            var methodCalled = false;
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .Returns<HttpRequestMessage, CancellationToken>((mess, token) => {
+                var response = new HttpResponseMessage {
+                    StatusCode = methodCalled ? HttpStatusCode.OK : HttpStatusCode.Unauthorized,
+                    Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes("Test")))
+                };
+                if (!methodCalled)
+                    response.Headers.WwwAuthenticate.Add(new("bearer", "authorization_uri=\"https://login.windows.net/common/oauth2/authorize\", error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwgInZhbHVlIjoiMTYwNDEwNjY1MSJ9fX0=\""));
+                methodCalled = true;
+                return Task.FromResult(response);
+            });
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+
+            var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo);
+
+            Assert.NotNull(response);
+
+            mockHandler.Protected().Verify("SendAsync", Times.Exactly(2), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
+        }
     }
 }
