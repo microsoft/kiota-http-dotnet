@@ -159,7 +159,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                     Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes("Test")))
                 };
                 if (!methodCalled)
-                    response.Headers.WwwAuthenticate.Add(new("bearer", "authorization_uri=\"https://login.windows.net/common/oauth2/authorize\", error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwgInZhbHVlIjoiMTYwNDEwNjY1MSJ9fX0=\""));
+                    response.Headers.WwwAuthenticate.Add(new("Bearer", "realm=\"\", authorization_uri=\"https://login.microsoftonline.com/common/oauth2/authorize\", client_id=\"00000003-0000-0000-c000-000000000000\", error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwgInZhbHVlIjoiMTY1MjgxMzUwOCJ9fX0=\""));
                 methodCalled = true;
                 return Task.FromResult(response);
             });

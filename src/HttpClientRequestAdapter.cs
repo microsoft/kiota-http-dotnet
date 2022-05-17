@@ -16,6 +16,7 @@ using System.Threading;
 using System.Net;
 using Microsoft.Kiota.Abstractions.Extensions;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -314,6 +315,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 throw new InvalidOperationException("Could not get a response after calling the service");
             return await RetryCAEResponseIfRequired(response, requestInfo, cancellationToken, claims);
         }
+        private static readonly Regex caeValueRegex = new("\"([^\"]*)\"", RegexOptions.Compiled);
         private async Task<HttpResponseMessage> RetryCAEResponseIfRequired(HttpResponseMessage response, RequestInformation requestInfo, CancellationToken cancellationToken, string claims)
         {
             if(response.StatusCode == HttpStatusCode.Unauthorized &&
@@ -321,11 +323,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 response.Headers.WwwAuthenticate?.FirstOrDefault(filterAuthHeader) is AuthenticationHeaderValue authHeader &&
                 authHeader.Parameter.Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries)
                                                 .Select(static x => x.Trim())
-                                                .FirstOrDefault(static x => x.StartsWith(ClaimsKey, StringComparison.OrdinalIgnoreCase))
-                                                ?.Split(new char[] {'='}, StringSplitOptions.RemoveEmptyEntries)
-                                                ?.Skip(1)
-                                                ?.FirstOrDefault()
-                                                ?.Trim('"') is string responseClaims)
+                                                .FirstOrDefault(static x => x.StartsWith(ClaimsKey, StringComparison.OrdinalIgnoreCase)) is string rawResponseClaims &&
+                    caeValueRegex.Match(rawResponseClaims) is Match claimsMatch &&
+                    claimsMatch.Groups.Count > 1 &&
+                    claimsMatch.Groups[1].Value is string responseClaims)
             {
                 return await GetHttpResponseMessage(requestInfo, cancellationToken, responseClaims);
             }
