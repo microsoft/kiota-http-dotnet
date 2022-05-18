@@ -15,6 +15,8 @@ using Microsoft.Kiota.Abstractions.Authentication;
 using System.Threading;
 using System.Net;
 using Microsoft.Kiota.Abstractions.Extensions;
+using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -294,18 +296,42 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             var rootNode = pNodeFactory.GetRootParseNode(responseContentType, contentStream);
             return rootNode;
         }
-        private async Task<HttpResponseMessage> GetHttpResponseMessage(RequestInformation requestInfo, CancellationToken cancellationToken)
+        private const string ClaimsKey = "claims";
+        private const string BearerAuthenticationScheme = "Bearer";
+        private static Func<AuthenticationHeaderValue, bool> filterAuthHeader = static x => x.Scheme.Equals(BearerAuthenticationScheme, StringComparison.OrdinalIgnoreCase);
+        private async Task<HttpResponseMessage> GetHttpResponseMessage(RequestInformation requestInfo, CancellationToken cancellationToken, string claims = default)
         {
             if(requestInfo == null)
                 throw new ArgumentNullException(nameof(requestInfo));
 
             SetBaseUrlForRequestInformation(requestInfo);
-            await authProvider.AuthenticateRequestAsync(requestInfo, cancellationToken);
+
+            var additionalAuthenticationContext = string.IsNullOrEmpty(claims) ? null : new Dictionary<string, object> { { ClaimsKey, claims } };
+            await authProvider.AuthenticateRequestAsync(requestInfo, additionalAuthenticationContext, cancellationToken);
 
             using var message = GetRequestMessageFromRequestInformation(requestInfo);
             var response = await this.client.SendAsync(message,cancellationToken);
             if(response == null)
                 throw new InvalidOperationException("Could not get a response after calling the service");
+            return await RetryCAEResponseIfRequired(response, requestInfo, cancellationToken, claims);
+        }
+        private static readonly Regex caeValueRegex = new("\"([^\"]*)\"", RegexOptions.Compiled);
+        private async Task<HttpResponseMessage> RetryCAEResponseIfRequired(HttpResponseMessage response, RequestInformation requestInfo, CancellationToken cancellationToken, string claims)
+        {
+            if(response.StatusCode == HttpStatusCode.Unauthorized &&
+                string.IsNullOrEmpty(claims) && // avoid infinite loop, we only retry once
+                (requestInfo.Content?.CanSeek ?? true) &&
+                response.Headers.WwwAuthenticate?.FirstOrDefault(filterAuthHeader) is AuthenticationHeaderValue authHeader &&
+                authHeader.Parameter.Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(static x => x.Trim())
+                                                .FirstOrDefault(static x => x.StartsWith(ClaimsKey, StringComparison.OrdinalIgnoreCase)) is string rawResponseClaims &&
+                    caeValueRegex.Match(rawResponseClaims) is Match claimsMatch &&
+                    claimsMatch.Groups.Count > 1 &&
+                    claimsMatch.Groups[1].Value is string responseClaims)
+            {
+                requestInfo.Content?.Seek(0, SeekOrigin.Begin);
+                return await GetHttpResponseMessage(requestInfo, cancellationToken, responseClaims);
+            }
             return response;
         }
         private void SetBaseUrlForRequestInformation(RequestInformation requestInfo)
