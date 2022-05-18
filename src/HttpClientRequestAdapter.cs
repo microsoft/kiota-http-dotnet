@@ -320,6 +320,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         {
             if(response.StatusCode == HttpStatusCode.Unauthorized &&
                 string.IsNullOrEmpty(claims) && // avoid infinite loop, we only retry once
+                (requestInfo.Content?.CanSeek ?? true) &&
                 response.Headers.WwwAuthenticate?.FirstOrDefault(filterAuthHeader) is AuthenticationHeaderValue authHeader &&
                 authHeader.Parameter.Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries)
                                                 .Select(static x => x.Trim())
@@ -328,6 +329,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     claimsMatch.Groups.Count > 1 &&
                     claimsMatch.Groups[1].Value is string responseClaims)
             {
+                requestInfo.Content?.Seek(0, SeekOrigin.Begin);
                 return await GetHttpResponseMessage(requestInfo, cancellationToken, responseClaims);
             }
             return response;
