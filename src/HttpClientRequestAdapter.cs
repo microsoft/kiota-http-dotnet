@@ -330,6 +330,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     claimsMatch.Groups[1].Value is string responseClaims)
             {
                 requestInfo.Content?.Seek(0, SeekOrigin.Begin);
+                await DrainAsync(response);
                 return await GetHttpResponseMessage(requestInfo, cancellationToken, responseClaims);
             }
             return response;
