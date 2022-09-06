@@ -123,15 +123,19 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.Equal("application/octet-stream", requestMessage.Content.Headers.ContentType.MediaType);
 
         }
-
-        [Fact]
-        public async void SendStreamReturnsUsableStream() {
+        [InlineData(HttpStatusCode.OK)]
+        [InlineData(HttpStatusCode.Created)]
+        [InlineData(HttpStatusCode.Accepted)]
+        [InlineData(HttpStatusCode.NonAuthoritativeInformation)]
+        [InlineData(HttpStatusCode.PartialContent)]
+        [Theory]
+        public async void SendStreamReturnsUsableStream(HttpStatusCode statusCode) {
             var mockHandler = new Mock<HttpMessageHandler>();
             var client = new HttpClient(mockHandler.Object);
             mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage {
-                StatusCode = HttpStatusCode.OK,
+                StatusCode = statusCode,
                 Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes("Test")))
             });
             var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
@@ -145,6 +149,31 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
 
             Assert.True(response.CanRead);
             Assert.Equal(4, response.Length);
+        }
+        [InlineData(HttpStatusCode.OK)]
+        [InlineData(HttpStatusCode.Created)]
+        [InlineData(HttpStatusCode.Accepted)]
+        [InlineData(HttpStatusCode.NonAuthoritativeInformation)]
+        [InlineData(HttpStatusCode.NoContent)]
+        [Theory]
+        public async void SendStreamReturnsNullForNoContent(HttpStatusCode statusCode) {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage {
+                StatusCode = statusCode,
+            });
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+
+            var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo);
+
+            Assert.Null(response);
         }
         [Fact]
         public async void RetriesOnCAEResponse() {

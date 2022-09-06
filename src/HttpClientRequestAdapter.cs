@@ -161,7 +161,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     var modelType = typeof(ModelType);
                     if(modelType == typeof(Stream))
                     {
-                        return (ModelType)(await response.Content.ReadAsStreamAsync() as object);
+                        var result = await response.Content.ReadAsStreamAsync();
+                        if (result.Length == 0) {
+                            result.Dispose();
+                            return default;
+                        }
+                        return (ModelType)(result as object);
                     }
                     else
                     {
