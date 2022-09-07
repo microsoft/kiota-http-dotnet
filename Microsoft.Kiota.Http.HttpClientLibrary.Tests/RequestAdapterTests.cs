@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
+using Microsoft.Kiota.Abstractions.Serialization;
 using Microsoft.Kiota.Abstractions.Store;
 using Microsoft.Kiota.Http.HttpClientLibrary.Tests.Mocks;
 using Moq;
@@ -225,6 +226,39 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             var response = await adapter.SendAsync<MockEntity>(requestInfo, MockEntity.Factory);
 
             Assert.Null(response);
+        }
+        [InlineData(HttpStatusCode.OK)]
+        [InlineData(HttpStatusCode.Created)]
+        [InlineData(HttpStatusCode.Accepted)]
+        [InlineData(HttpStatusCode.NonAuthoritativeInformation)]
+        [Theory]
+        public async void SendReturnsObjectOnContent(HttpStatusCode statusCode) {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            using var mockContent = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes("Test")));
+            mockContent.Headers.ContentType = new("application/json");
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage {
+                StatusCode = statusCode,
+                Content = mockContent,
+            });
+            var mockParseNode = new Mock<IParseNode>();
+            mockParseNode.Setup<IParsable>(x => x.GetObjectValue(It.IsAny<ParsableFactory<MockEntity>>()))
+            .Returns(new MockEntity());
+            var mockParseNodeFactory = new Mock<IParseNodeFactory>();
+            mockParseNodeFactory.Setup<IParseNode>(x => x.GetRootParseNode(It.IsAny<string>(), It.IsAny<Stream>()))
+                .Returns(mockParseNode.Object);
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client, parseNodeFactory: mockParseNodeFactory.Object);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+
+            var response = await adapter.SendAsync<MockEntity>(requestInfo, MockEntity.Factory);
+
+            Assert.NotNull(response);
         }
         [Fact]
         public async void RetriesOnCAEResponse() {
