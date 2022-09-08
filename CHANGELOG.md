@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.0.0-preview.9] - 2022-09-07
+
+### Added
+
+- Added support for additional status codes.
+
 ## [1.0.0-preview.8] - 2022-05-19
 
 ### Changed

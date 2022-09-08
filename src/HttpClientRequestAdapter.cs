@@ -75,7 +75,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     await ThrowFailedResponse(response, errorMapping);
                     if(shouldReturnNull(response)) return default;
                     var rootNode = await GetRootParseNode(response);
-                    var result = rootNode.GetCollectionOfObjectValues<ModelType>(factory);
+                    var result = rootNode?.GetCollectionOfObjectValues<ModelType>(factory);
                     return result;
                 } finally {
                     await DrainAsync(response);
@@ -101,7 +101,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     await ThrowFailedResponse(response, errorMapping);
                     if(shouldReturnNull(response)) return default;
                     var rootNode = await GetRootParseNode(response);
-                    var result = rootNode.GetCollectionOfPrimitiveValues<ModelType>();
+                    var result = rootNode?.GetCollectionOfPrimitiveValues<ModelType>();
                     return result;
                 } finally {
                     await DrainAsync(response);
@@ -129,6 +129,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     await ThrowFailedResponse(response, errorMapping);
                     if(shouldReturnNull(response)) return default;
                     var rootNode = await GetRootParseNode(response);
+                    if (rootNode == null) return default;
                     var result = rootNode.GetObjectValue<ModelType>(factory);
                     return result;
                 } finally {
@@ -161,13 +162,21 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     var modelType = typeof(ModelType);
                     if(modelType == typeof(Stream))
                     {
-                        return (ModelType)(await response.Content.ReadAsStreamAsync() as object);
+                        var result = await response.Content.ReadAsStreamAsync();
+                        if (result.Length == 0) {
+                            result.Dispose();
+                            return default;
+                        }
+                        return (ModelType)(result as object);
                     }
                     else
                     {
                         var rootNode = await GetRootParseNode(response);
                         object result;
-                        if(modelType == typeof(bool?))
+                        if(rootNode == null) {
+                            result = null;
+                        }
+                        else if(modelType == typeof(bool?))
                         {
                             result = rootNode.GetBoolValue();
                         }
@@ -282,7 +291,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     throw new ApiException($"The server returned an unexpected status code and no error factory is registered for this code: {statusCodeAsString}");
 
             var rootNode = await GetRootParseNode(response);
-            var result = rootNode.GetObjectValue(errorFactory);
+            var result = rootNode?.GetObjectValue(errorFactory);
             if(result is not Exception ex)
                 throw new ApiException($"The server returned an unexpected status code and the error registered for this code failed to deserialize: {statusCodeAsString}");
             else throw ex;
@@ -291,7 +300,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         {
             var responseContentType = response.Content.Headers?.ContentType?.MediaType?.ToLowerInvariant();
             if(string.IsNullOrEmpty(responseContentType))
-                throw new InvalidOperationException("no response content type header for deserialization");
+                return null;
             using var contentStream = await response.Content.ReadAsStreamAsync();
             var rootNode = pNodeFactory.GetRootParseNode(responseContentType, contentStream);
             return rootNode;
