@@ -68,5 +68,6 @@
 	"features": {
 		"github-cli": "latest",
 		"powershell": "latest"
-	}
+	},
+    "postStartCommand": "git config gpg.program gpg" // in case commits sign in is configured on windows and mapped to the gpg4win proc. To reset (when starting locally) `git config --unset gpg.program
 }
