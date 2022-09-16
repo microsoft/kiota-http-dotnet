@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -42,14 +43,19 @@ public class ParametersNameDecodingHandler: DelegatingHandler
         }
 
         var originalUri = httpRequestMessage.RequestUri;
-        var query = originalUri.Query;
-        var symbolsToReplace = EncodingOptions.ParametersToDecode.Select(x => ($"%{Convert.ToInt32(x):X}", x.ToString())).ToArray();
-        foreach(var symbolToReplace in symbolsToReplace.Where(x => query.Contains(x.Item1)))
-        {
-            query = query.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
-        }
+        var query = DecodeUriEncodedString(originalUri.Query, EncodingOptions.ParametersToDecode);
         var decodedUri = new UriBuilder(originalUri.Scheme, originalUri.Host, originalUri.Port, originalUri.AbsolutePath, query).Uri;
         httpRequestMessage.RequestUri = decodedUri;
         return base.SendAsync(httpRequestMessage, cancellationToken);
+    }
+    internal static string DecodeUriEncodedString(string original, IEnumerable<char> charactersToDecode) {
+        if (string.IsNullOrEmpty(original) || !(charactersToDecode?.Any() ?? false))
+            return original;
+        var symbolsToReplace = charactersToDecode.Select(static x => ($"%{Convert.ToInt32(x):X}", x.ToString())).ToArray();
+        foreach(var symbolToReplace in symbolsToReplace.Where(x => original.Contains(x.Item1)))
+        {
+            original = original.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
+        }
+        return original;
     }
 }

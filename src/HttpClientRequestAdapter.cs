@@ -17,6 +17,8 @@ using System.Net;
 using Microsoft.Kiota.Abstractions.Extensions;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -30,20 +32,25 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         private IParseNodeFactory pNodeFactory;
         private ISerializationWriterFactory sWriterFactory;
         private readonly bool createdClient;
+        private readonly ObservabilityOptions obsOptions;
+        private readonly ActivitySource activitySource;
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpClientRequestAdapter"/> class.
         /// <param name="authenticationProvider">The authentication provider.</param>
         /// <param name="parseNodeFactory">The parse node factory.</param>
         /// <param name="serializationWriterFactory">The serialization writer factory.</param>
         /// <param name="httpClient">The native HTTP client.</param>
+        /// <param name="observabilityOptions">The observability options.</param>
         /// </summary>
-        public HttpClientRequestAdapter(IAuthenticationProvider authenticationProvider, IParseNodeFactory parseNodeFactory = null, ISerializationWriterFactory serializationWriterFactory = null, HttpClient httpClient = null)
+        public HttpClientRequestAdapter(IAuthenticationProvider authenticationProvider, IParseNodeFactory parseNodeFactory = null, ISerializationWriterFactory serializationWriterFactory = null, HttpClient httpClient = null, ObservabilityOptions observabilityOptions = null)
         {
             authProvider = authenticationProvider ?? throw new ArgumentNullException(nameof(authenticationProvider));
             createdClient = httpClient == null;
             client = httpClient ?? KiotaClientFactory.Create();
             pNodeFactory = parseNodeFactory ?? ParseNodeFactoryRegistry.DefaultInstance;
             sWriterFactory = serializationWriterFactory ?? SerializationWriterFactoryRegistry.DefaultInstance;
+            obsOptions = observabilityOptions ?? new ObservabilityOptions();
+            activitySource = new(obsOptions.TracerInstrumentationName);
         }
         /// <summary>Factory to use to get a serializer for payload serialization</summary>
         public ISerializationWriterFactory SerializationWriterFactory
@@ -57,6 +64,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// The base url for every request.
         /// </summary>
         public string BaseUrl { get; set; }
+        private static readonly char[] charactersToDecodeForUriTemplate = new char[] { '$', '.', '-', '~' };
+        private static readonly Regex queryParametersCleanupRegex = new (@"\{\?[^\}]+}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        private Activity startTracingSpan(RequestInformation requestInfo, string methodName) {
+            var decodedUriTemplate = ParametersNameDecodingHandler.DecodeUriEncodedString(requestInfo.UrlTemplate, charactersToDecodeForUriTemplate);
+            var telemetryPathValue = queryParametersCleanupRegex.Replace(decodedUriTemplate, string.Empty);
+            var span = activitySource.StartActivity($"{methodName} - {telemetryPathValue}");
+            span?.SetTag("http.uri_template", decodedUriTemplate);
+            return span;
+        }
         /// <summary>
         /// Send a <see cref="RequestInformation"/> instance with a collection instance of <typeparam name="ModelType"></typeparam>
         /// </summary>
@@ -121,6 +137,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>The deserialized response model.</returns>
         public async Task<ModelType> SendAsync<ModelType>(RequestInformation requestInfo, ParsableFactory<ModelType> factory, IResponseHandler responseHandler = null, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default) where ModelType : IParsable
         {
+            using var span = startTracingSpan(requestInfo, "SendAsync");
             var response = await GetHttpResponseMessage(requestInfo, cancellationToken);
             requestInfo.Content?.Dispose();
             if(responseHandler == null)
@@ -310,6 +327,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         private static Func<AuthenticationHeaderValue, bool> filterAuthHeader = static x => x.Scheme.Equals(BearerAuthenticationScheme, StringComparison.OrdinalIgnoreCase);
         private async Task<HttpResponseMessage> GetHttpResponseMessage(RequestInformation requestInfo, CancellationToken cancellationToken, string claims = default)
         {
+            using var span = activitySource.StartActivity(nameof(GetHttpResponseMessage));
             if(requestInfo == null)
                 throw new ArgumentNullException(nameof(requestInfo));
 
@@ -321,7 +339,27 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             using var message = GetRequestMessageFromRequestInformation(requestInfo);
             var response = await this.client.SendAsync(message,cancellationToken);
             if(response == null)
-                throw new InvalidOperationException("Could not get a response after calling the service");
+            {
+                var ex = new InvalidOperationException("Could not get a response after calling the service");
+                // span.RecordException(ex);
+                throw ex;
+            }
+            if (response.Headers.TryGetValues("Content-Length", out var contentLengthValues) &&
+                contentLengthValues.Any() &&
+                contentLengthValues.First() is string firstContentLengthValue &&
+                int.TryParse(firstContentLengthValue, out var contentLength))
+            {
+                span?.SetTag("http.response_content_length", contentLength);
+            }
+            if (response.Headers.TryGetValues("Content-Type", out var contentTypeValues) &&
+                contentTypeValues.Any() &&
+                contentTypeValues.First() is string firstContentTypeValue)
+            {
+                span?.SetTag("http.response_content_type", firstContentTypeValue);
+            }
+            span?.SetTag("http.status_code", (int)response.StatusCode);
+            span?.SetTag("http.flavor", $"{response.Version.Major}.{response.Version.Minor}");
+
             return await RetryCAEResponseIfRequired(response, requestInfo, cancellationToken, claims);
         }
         private static readonly Regex caeValueRegex = new("\"([^\"]*)\"", RegexOptions.Compiled);
@@ -393,6 +431,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         {
             if(createdClient)
                 client?.Dispose();
+            activitySource?.Dispose();
             GC.SuppressFinalize(this);
         }
     }
