@@ -23,7 +23,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
     /// </summary>
     public class ChaosHandler : DelegatingHandler, IDisposable
     {
-        private readonly DiagnosticSource _logger = new DiagnosticListener(typeof(ChaosHandler).FullName!);
         private readonly Random _random;
         private readonly ChaosHandlerOption _chaosHandlerOptions;
         private List<HttpResponseMessage> _knownFailures;
@@ -39,7 +38,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             _random = new Random(DateTime.Now.Millisecond);
             LoadKnownFailures(_chaosHandlerOptions.KnownChaos);
         }
-
+        /// <summary>
+        /// The key used for the open telemetry event.
+        /// </summary>
+        public const string ChaosHandlerTriggeredEventKey = "com.microsoft.kiota.chaos_handler_triggered";
         /// <summary>
         /// Sends the request
         /// </summary>
@@ -53,35 +55,42 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             // Select global or per request options
             var chaosHandlerOptions = request.GetRequestOption<ChaosHandlerOption>() ?? _chaosHandlerOptions;
+            ActivitySource activitySource;
+            Activity activity;
+            var obsOptions = request.GetObservabilityOptionsForRequest();
+            if (obsOptions != null) {
+                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                activity = activitySource?.StartActivity("ChaosHandler_SendAsync");
+                activity?.SetTag("com.microsoft.kiota.handler.chaos.enable", true);
+            } else {
+                activity = null;
+                activitySource = null;
+            }
+            try {
 
-            HttpResponseMessage response = null;
-            // Planned Chaos or Random?
-            if(chaosHandlerOptions.PlannedChaosFactory != null)
-            {
-                response = chaosHandlerOptions.PlannedChaosFactory(request);
-                if(response != null)
+                // Planned Chaos or Random?
+                if(chaosHandlerOptions?.PlannedChaosFactory(request) is HttpResponseMessage plannedResponse)
                 {
-                    response.RequestMessage = request;
-                    if(_logger.IsEnabled("PlannedChaosResponse"))
-                        _logger.Write("PlannedChaosResponse", response);
+                    plannedResponse.RequestMessage = request;
+                    activity?.AddEvent(new(ChaosHandlerTriggeredEventKey));
+                    activity?.SetTag("com.microsoft.kiota.handler.chaos.planned", true);
+                    return plannedResponse;
                 }
-            }
-            else
-            {
-                if(_random.Next(100) < chaosHandlerOptions.ChaosPercentLevel)
+                else if(_random.Next(100) < chaosHandlerOptions.ChaosPercentLevel)
                 {
-                    response = CreateChaosResponse(chaosHandlerOptions.KnownChaos ?? _knownFailures);
-                    response.RequestMessage = request;
-                    if(_logger.IsEnabled("ChaosResponse"))
-                        _logger.Write("ChaosResponse", response);
+                    var chaosResponse = CreateChaosResponse(chaosHandlerOptions.KnownChaos ?? _knownFailures);
+                    chaosResponse.RequestMessage = request;
+                    activity?.AddEvent(new(ChaosHandlerTriggeredEventKey));
+                    activity?.SetTag("com.microsoft.kiota.handler.chaos.planned", false);
+                    return chaosResponse;
                 }
-            }
 
-            if(response == null)
-            {
-                response = await base.SendAsync(request, cancellationToken);
+                return await base.SendAsync(request, cancellationToken);
             }
-            return response;
+            finally {
+                activity?.Dispose();
+                activitySource?.Dispose();
+            }
         }
 
         private HttpResponseMessage CreateChaosResponse(List<HttpResponseMessage> knownFailures)
