@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -46,84 +47,103 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             RedirectOption = httpRequestMessage.GetRequestOption<RedirectHandlerOption>() ?? RedirectOption;
 
-            // send request first time to get response
-            var response = await base.SendAsync(httpRequestMessage, cancellationToken);
+            ActivitySource activitySource;
+            Activity activity;
+            if (httpRequestMessage.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                activity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)}");
+                activity?.SetTag("com.microsoft.kiota.handler.redirect.enable", true);
+            } else {
+                activity = null;
+                activitySource = null;
+            }
+            try {
 
-            // check response status code and redirect handler option
-            if(ShouldRedirect(response))
-            {
-                if(response.Headers.Location == null)
+                // send request first time to get response
+                var response = await base.SendAsync(httpRequestMessage, cancellationToken);
+
+                // check response status code and redirect handler option
+                if(ShouldRedirect(response))
                 {
-                    throw new InvalidOperationException(
-                        "Unable to perform redirect as Location Header is not set in response",
-                                new Exception($"No header present in response with status code {response.StatusCode}"));
-                }
-
-                var redirectCount = 0;
-
-                while(redirectCount < RedirectOption.MaxRedirect)
-                {
-                    // Drain response content to free responses.
-                    if(response.Content != null)
-                    {
-                        await response.Content.ReadAsByteArrayAsync();
-                    }
-
-                    // general clone request with internal CloneAsync (see CloneAsync for details) extension method
-                    var newRequest = await response.RequestMessage.CloneAsync();
-
-                    // status code == 303: change request method from post to get and content to be null
-                    if(response.StatusCode == HttpStatusCode.SeeOther)
-                    {
-                        newRequest.Content = null;
-                        newRequest.Method = HttpMethod.Get;
-                    }
-
-                    // Set newRequestUri from response
-                    if(response.Headers.Location?.IsAbsoluteUri ?? false)
-                    {
-                        newRequest.RequestUri = response.Headers.Location;
-                    }
-                    else
-                    {
-                        var baseAddress = newRequest.RequestUri?.GetComponents(UriComponents.SchemeAndServer | UriComponents.KeepDelimiter, UriFormat.Unescaped);
-                        newRequest.RequestUri = new Uri(baseAddress + response.Headers.Location);
-                    }
-
-                    // Remove Auth if http request's scheme or host changes
-                    if(!newRequest.RequestUri.Host.Equals(httpRequestMessage.RequestUri?.Host) ||
-                       !newRequest.RequestUri.Scheme.Equals(httpRequestMessage.RequestUri?.Scheme))
-                    {
-                        newRequest.Headers.Authorization = null;
-                    }
-
-                    // If scheme has changed. Ensure that this has been opted in for security reasons
-                    if(!newRequest.RequestUri.Scheme.Equals(httpRequestMessage.RequestUri?.Scheme) && !RedirectOption.AllowRedirectOnSchemeChange)
+                    if(response.Headers.Location == null)
                     {
                         throw new InvalidOperationException(
-                            $"Redirects with changing schemes not allowed by default. You can change this by modifying the {nameof(RedirectOption.AllowRedirectOnSchemeChange)} option",
-                            new Exception($"Scheme changed from {httpRequestMessage.RequestUri?.Scheme} to {newRequest.RequestUri.Scheme}."));
+                            "Unable to perform redirect as Location Header is not set in response",
+                                    new Exception($"No header present in response with status code {response.StatusCode}"));
                     }
 
-                    // Send redirect request to get response
-                    response = await base.SendAsync(newRequest, cancellationToken);
+                    var redirectCount = 0;
 
-                    // Check response status code
-                    if(ShouldRedirect(response))
+                    while(redirectCount < RedirectOption.MaxRedirect)
                     {
-                        redirectCount++;
+                        using var redirectActivity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)} - redirect {redirectCount}");
+                        redirectActivity?.SetTag("com.microsoft.kiota.handler.redirect.count", redirectCount);
+                        redirectActivity?.SetTag("http.status_code", response.StatusCode);
+                        // Drain response content to free responses.
+                        if(response.Content != null)
+                        {
+                            await response.Content.ReadAsByteArrayAsync();
+                        }
+
+                        // general clone request with internal CloneAsync (see CloneAsync for details) extension method
+                        var newRequest = await response.RequestMessage.CloneAsync();
+
+                        // status code == 303: change request method from post to get and content to be null
+                        if(response.StatusCode == HttpStatusCode.SeeOther)
+                        {
+                            newRequest.Content = null;
+                            newRequest.Method = HttpMethod.Get;
+                        }
+
+                        // Set newRequestUri from response
+                        if(response.Headers.Location?.IsAbsoluteUri ?? false)
+                        {
+                            newRequest.RequestUri = response.Headers.Location;
+                        }
+                        else
+                        {
+                            var baseAddress = newRequest.RequestUri?.GetComponents(UriComponents.SchemeAndServer | UriComponents.KeepDelimiter, UriFormat.Unescaped);
+                            newRequest.RequestUri = new Uri(baseAddress + response.Headers.Location);
+                        }
+
+                        // Remove Auth if http request's scheme or host changes
+                        if(!newRequest.RequestUri.Host.Equals(httpRequestMessage.RequestUri?.Host) ||
+                        !newRequest.RequestUri.Scheme.Equals(httpRequestMessage.RequestUri?.Scheme))
+                        {
+                            newRequest.Headers.Authorization = null;
+                        }
+
+                        // If scheme has changed. Ensure that this has been opted in for security reasons
+                        if(!newRequest.RequestUri.Scheme.Equals(httpRequestMessage.RequestUri?.Scheme) && !RedirectOption.AllowRedirectOnSchemeChange)
+                        {
+                            throw new InvalidOperationException(
+                                $"Redirects with changing schemes not allowed by default. You can change this by modifying the {nameof(RedirectOption.AllowRedirectOnSchemeChange)} option",
+                                new Exception($"Scheme changed from {httpRequestMessage.RequestUri?.Scheme} to {newRequest.RequestUri.Scheme}."));
+                        }
+
+                        // Send redirect request to get response
+                        response = await base.SendAsync(newRequest, cancellationToken);
+
+                        // Check response status code
+                        if(ShouldRedirect(response))
+                        {
+                            redirectCount++;
+                        }
+                        else
+                        {
+                            return response;
+                        }
                     }
-                    else
-                    {
-                        return response;
-                    }
+
+                    throw new InvalidOperationException(
+                        "Too many redirects performed",
+                        new Exception($"Max redirects exceeded. Redirect count : {redirectCount}"));
                 }
-
-                throw new InvalidOperationException(
-                    "Too many redirects performed",
-                    new Exception($"Max redirects exceeded. Redirect count : {redirectCount}"));
+                return response;
+            } finally {
+                activity?.Dispose();
+                activitySource?.Dispose();
             }
-            return response;
         }
 
         private bool ShouldRedirect(HttpResponseMessage responseMessage)

@@ -57,10 +57,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             var chaosHandlerOptions = request.GetRequestOption<ChaosHandlerOption>() ?? _chaosHandlerOptions;
             ActivitySource activitySource;
             Activity activity;
-            var obsOptions = request.GetObservabilityOptionsForRequest();
-            if (obsOptions != null) {
+            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
-                activity = activitySource?.StartActivity("ChaosHandler_SendAsync");
+                activity = activitySource?.StartActivity($"{nameof(ChaosHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.chaos.enable", true);
             } else {
                 activity = null;
