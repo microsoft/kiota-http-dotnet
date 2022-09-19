@@ -68,7 +68,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             try {
 
                 // Planned Chaos or Random?
-                if(chaosHandlerOptions?.PlannedChaosFactory(request) is HttpResponseMessage plannedResponse)
+                if(chaosHandlerOptions.PlannedChaosFactory != null && chaosHandlerOptions.PlannedChaosFactory(request) is HttpResponseMessage plannedResponse)
                 {
                     plannedResponse.RequestMessage = request;
                     activity?.AddEvent(new(ChaosHandlerTriggeredEventKey));
