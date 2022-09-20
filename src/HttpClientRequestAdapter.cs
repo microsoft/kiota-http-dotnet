@@ -394,7 +394,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(response == null)
             {
                 var ex = new InvalidOperationException("Could not get a response after calling the service");
-                // activityForAttributes.RecordException(ex);
                 throw ex;
             }
             if (response.Headers.TryGetValues("Content-Length", out var contentLengthValues) &&
@@ -453,7 +452,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>A <see cref="HttpRequestMessage"/> instance</returns>
         public HttpRequestMessage GetRequestMessageFromRequestInformation(RequestInformation requestInfo)
         {
-            return GetRequestMessageFromRequestInformationInternal(requestInfo, null); //TODO: @andrueastman is there a reason this method is public?
+            return GetRequestMessageFromRequestInformationInternal(requestInfo, null);
         }
         private HttpRequestMessage GetRequestMessageFromRequestInformationInternal(RequestInformation requestInfo, Activity activityForAttributes)
         {
