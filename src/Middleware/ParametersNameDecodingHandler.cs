@@ -3,6 +3,8 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -33,23 +35,43 @@ public class ParametersNameDecodingHandler: DelegatingHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken)
     {
         var options = httpRequestMessage.GetRequestOption<ParametersNameDecodingOption>() ?? EncodingOptions;
-        if(!httpRequestMessage.RequestUri.Query.Contains('%') ||
-            options == null ||
-            !options.Enabled ||
-            !(options.ParametersToDecode?.Any() ?? false))
-        {
-            return base.SendAsync(httpRequestMessage, cancellationToken);
+        ActivitySource activitySource;
+        Activity activity;
+        if (httpRequestMessage.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+            activity = activitySource?.StartActivity($"{nameof(ParametersNameDecodingHandler)}_{nameof(SendAsync)}");
+            activity?.SetTag("com.microsoft.kiota.handler.parameters_name_decoding.enable", true);
+        } else {
+            activity = null;
+            activitySource = null;
         }
+        try {
+            if(!httpRequestMessage.RequestUri.Query.Contains('%') ||
+                options == null ||
+                !options.Enabled ||
+                !(options.ParametersToDecode?.Any() ?? false))
+            {
+                return base.SendAsync(httpRequestMessage, cancellationToken);
+            }
 
-        var originalUri = httpRequestMessage.RequestUri;
-        var query = originalUri.Query;
-        var symbolsToReplace = EncodingOptions.ParametersToDecode.Select(x => ($"%{Convert.ToInt32(x):X}", x.ToString())).ToArray();
-        foreach(var symbolToReplace in symbolsToReplace.Where(x => query.Contains(x.Item1)))
-        {
-            query = query.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
+            var originalUri = httpRequestMessage.RequestUri;
+            var query = DecodeUriEncodedString(originalUri.Query, EncodingOptions.ParametersToDecode);
+            var decodedUri = new UriBuilder(originalUri.Scheme, originalUri.Host, originalUri.Port, originalUri.AbsolutePath, query).Uri;
+            httpRequestMessage.RequestUri = decodedUri;
+            return base.SendAsync(httpRequestMessage, cancellationToken);
+        } finally {
+            activity?.Dispose();
+            activitySource?.Dispose();
         }
-        var decodedUri = new UriBuilder(originalUri.Scheme, originalUri.Host, originalUri.Port, originalUri.AbsolutePath, query).Uri;
-        httpRequestMessage.RequestUri = decodedUri;
-        return base.SendAsync(httpRequestMessage, cancellationToken);
+    }
+    internal static string DecodeUriEncodedString(string original, IEnumerable<char> charactersToDecode) {
+        if (string.IsNullOrEmpty(original) || !(charactersToDecode?.Any() ?? false))
+            return original;
+        var symbolsToReplace = charactersToDecode.Select(static x => ($"%{Convert.ToInt32(x):X}", x.ToString())).ToArray();
+        foreach(var symbolToReplace in symbolsToReplace.Where(x => original.Contains(x.Item1)))
+        {
+            original = original.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
+        }
+        return original;
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -52,16 +53,32 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 throw new ArgumentNullException(nameof(httpRequest));
 
             RetryOption = httpRequest.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
-
-            var response = await base.SendAsync(httpRequest, cancellationToken);
-
-            // Check whether retries are permitted and that the MaxRetry value is a non - negative, non - zero value
-            if(httpRequest.IsBuffered() && RetryOption.MaxRetry > 0 && (ShouldRetry(response.StatusCode) || RetryOption.ShouldRetry(RetryOption.Delay, 0, response)))
-            {
-                response = await SendRetryAsync(response, cancellationToken);
+            ActivitySource activitySource;
+            Activity activity;
+            if (httpRequest.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                activity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)}");
+                activity?.SetTag("com.microsoft.kiota.handler.retry.enable", true);
+            } else {
+                activity = null;
+                activitySource = null;
             }
 
-            return response;
+            try {
+
+                var response = await base.SendAsync(httpRequest, cancellationToken);
+
+                // Check whether retries are permitted and that the MaxRetry value is a non - negative, non - zero value
+                if(httpRequest.IsBuffered() && RetryOption.MaxRetry > 0 && (ShouldRetry(response.StatusCode) || RetryOption.ShouldRetry(RetryOption.Delay, 0, response)))
+                {
+                    response = await SendRetryAsync(response, cancellationToken, activitySource);
+                }
+
+                return response;
+            } finally {
+                activity?.Dispose();
+                activitySource?.Dispose();
+            }
         }
 
         /// <summary>
@@ -69,14 +86,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// </summary>
         /// <param name="response">The <see cref="HttpResponseMessage"/> which is returned and includes the HTTP request needs to be retried.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the retry.</param>
+        /// <param name="activitySource">The <see cref="ActivitySource"/> for the retry.</param>
         /// <returns></returns>
-        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response, CancellationToken cancellationToken, ActivitySource activitySource)
         {
             int retryCount = 0;
             TimeSpan cumulativeDelay = TimeSpan.Zero;
 
             while(retryCount < RetryOption.MaxRetry)
             {
+                using var retryActivity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)} - attempt {retryCount}");
+                retryActivity?.SetTag("http.retry_count", retryCount);
+                retryActivity?.SetTag("http.status_code", response.StatusCode);
                 // Drain response content to free connections. Need to perform this
                 // before retry attempt and before the TooManyRetries ServiceException.
                 if(response.Content != null)

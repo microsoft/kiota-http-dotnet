@@ -3,11 +3,13 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Kiota.Http.HttpClientLibrary.Extensions;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 {
@@ -29,29 +31,46 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(httpRequest == null)
                 throw new ArgumentNullException(nameof(httpRequest));
 
-            StringWithQualityHeaderValue gzipQHeaderValue = new StringWithQualityHeaderValue(GZip);
-
-            // Add Accept-encoding: gzip header to incoming request if it doesn't have one.
-            if(!httpRequest.Headers.AcceptEncoding.Contains(gzipQHeaderValue))
-            {
-                httpRequest.Headers.AcceptEncoding.Add(gzipQHeaderValue);
+            ActivitySource activitySource;
+            Activity activity;
+            if (httpRequest.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                activity = activitySource?.StartActivity($"{nameof(CompressionHandler)}_{nameof(SendAsync)}");
+                activity?.SetTag("com.microsoft.kiota.handler.compression.enable", true);
+            } else {
+                activity = null;
+                activitySource = null;
             }
 
-            HttpResponseMessage response = await base.SendAsync(httpRequest, cancellationToken);
+            try {
 
-            // Decompress response content when Content-Encoding: gzip header is present.
-            if(ShouldDecompressContent(response))
-            {
-                StreamContent streamContent = new StreamContent(new GZipStream(await response.Content.ReadAsStreamAsync(), CompressionMode.Decompress));
-                // Copy Content Headers to the destination stream content
-                foreach(var httpContentHeader in response.Content.Headers)
+                StringWithQualityHeaderValue gzipQHeaderValue = new StringWithQualityHeaderValue(GZip);
+
+                // Add Accept-encoding: gzip header to incoming request if it doesn't have one.
+                if(!httpRequest.Headers.AcceptEncoding.Contains(gzipQHeaderValue))
                 {
-                    streamContent.Headers.TryAddWithoutValidation(httpContentHeader.Key, httpContentHeader.Value);
+                    httpRequest.Headers.AcceptEncoding.Add(gzipQHeaderValue);
                 }
-                response.Content = streamContent;
-            }
 
-            return response;
+                HttpResponseMessage response = await base.SendAsync(httpRequest, cancellationToken);
+
+                // Decompress response content when Content-Encoding: gzip header is present.
+                if(ShouldDecompressContent(response))
+                {
+                    StreamContent streamContent = new StreamContent(new GZipStream(await response.Content.ReadAsStreamAsync(), CompressionMode.Decompress));
+                    // Copy Content Headers to the destination stream content
+                    foreach(var httpContentHeader in response.Content.Headers)
+                    {
+                        streamContent.Headers.TryAddWithoutValidation(httpContentHeader.Key, httpContentHeader.Value);
+                    }
+                    response.Content = streamContent;
+                }
+
+                return response;
+            } finally {
+                activity?.Dispose();
+                activitySource?.Dispose();
+            }
         }
 
         /// <summary>
