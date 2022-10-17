@@ -78,14 +78,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// </summary>
         /// <param name="requestInfo">The <see cref="RequestInformation"/> instance to send</param>
         /// <param name="factory">The factory of the response model to deserialize the response into.</param>
-        /// <param name="responseHandler">The <see cref="IResponseHandler"/> to use with the response</param>
         /// <param name="errorMapping">The error factories mapping to use in case of a failed request.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to use for cancelling the request.</param>
-        public async Task<IEnumerable<ModelType>> SendCollectionAsync<ModelType>(RequestInformation requestInfo, ParsableFactory<ModelType> factory, IResponseHandler responseHandler = default, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default) where ModelType : IParsable
+        public async Task<IEnumerable<ModelType>> SendCollectionAsync<ModelType>(RequestInformation requestInfo, ParsableFactory<ModelType> factory, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default) where ModelType : IParsable
         {
             using var span = startTracingSpan(requestInfo, nameof(SendCollectionAsync));
             var response = await GetHttpResponseMessage(requestInfo, cancellationToken, span);
             requestInfo.Content?.Dispose();
+            var responseHandler = GetResponseHandler(requestInfo);
             if(responseHandler == null)
             {
                 try {
@@ -109,14 +109,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// Executes the HTTP request specified by the given RequestInformation and returns the deserialized primitive response model collection.
         /// </summary>
         /// <param name="requestInfo">The RequestInformation object to use for the HTTP request.</param>
-        /// <param name="responseHandler">The response handler to use for the HTTP request instead of the default handler.</param>
         /// <param name="errorMapping">The error factories mapping to use in case of a failed request.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to use for cancelling the request.</param>
         /// <returns>The deserialized primitive response model collection.</returns>
-        public async Task<IEnumerable<ModelType>> SendPrimitiveCollectionAsync<ModelType>(RequestInformation requestInfo, IResponseHandler responseHandler = default, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default) {
+        public async Task<IEnumerable<ModelType>> SendPrimitiveCollectionAsync<ModelType>(RequestInformation requestInfo, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default) {
             using var span = startTracingSpan(requestInfo, nameof(SendPrimitiveCollectionAsync));
             var response = await GetHttpResponseMessage(requestInfo, cancellationToken, span);
             requestInfo.Content?.Dispose();
+            var responseHandler = GetResponseHandler(requestInfo);
             if(responseHandler == null)
             {
                 try {
@@ -145,15 +145,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// </summary>
         /// <param name="requestInfo">The <see cref="RequestInformation"/> instance to send</param>
         /// <param name="factory">The factory of the response model to deserialize the response into.</param>
-        /// <param name="responseHandler">The <see cref="IResponseHandler"/> to use with the response</param>
         /// <param name="errorMapping">The error factories mapping to use in case of a failed request.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to use for cancelling the request.</param>
         /// <returns>The deserialized response model.</returns>
-        public async Task<ModelType> SendAsync<ModelType>(RequestInformation requestInfo, ParsableFactory<ModelType> factory, IResponseHandler responseHandler = null, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default) where ModelType : IParsable
+        public async Task<ModelType> SendAsync<ModelType>(RequestInformation requestInfo, ParsableFactory<ModelType> factory, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default) where ModelType : IParsable
         {
             using var span = startTracingSpan(requestInfo, nameof(SendAsync));
             var response = await GetHttpResponseMessage(requestInfo, cancellationToken, span);
             requestInfo.Content?.Dispose();
+            var responseHandler = GetResponseHandler(requestInfo);
             if(responseHandler == null)
             {
                 try {
@@ -181,15 +181,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// Send a <see cref="RequestInformation"/> instance with a primitive instance of <typeparam name="ModelType"></typeparam>
         /// </summary>
         /// <param name="requestInfo">The <see cref="RequestInformation"/> instance to send</param>
-        /// <param name="responseHandler">The <see cref="IResponseHandler"/> to use with the response</param>
         /// <param name="errorMapping">The error factories mapping to use in case of a failed request.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to use for cancelling the request.</param>
         /// <returns>The deserialized primitive response model.</returns>
-        public async Task<ModelType> SendPrimitiveAsync<ModelType>(RequestInformation requestInfo, IResponseHandler responseHandler = default, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default)
+        public async Task<ModelType> SendPrimitiveAsync<ModelType>(RequestInformation requestInfo, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default)
         {
             using var span = startTracingSpan(requestInfo, nameof(SendPrimitiveAsync));
             var response = await GetHttpResponseMessage(requestInfo, cancellationToken, span);
             requestInfo.Content?.Dispose();
+            var responseHandler = GetResponseHandler(requestInfo);
             if(responseHandler == null)
             {
                 try {
@@ -286,15 +286,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// Send a <see cref="RequestInformation"/> instance with an empty request body
         /// </summary>
         /// <param name="requestInfo">The <see cref="RequestInformation"/> instance to send</param>
-        /// <param name="responseHandler">The <see cref="IResponseHandler"/> to use with the response</param>
         /// <param name="errorMapping">The error factories mapping to use in case of a failed request.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to use for cancelling the request.</param>
         /// <returns></returns>
-        public async Task SendNoContentAsync(RequestInformation requestInfo, IResponseHandler responseHandler = null, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default)
+        public async Task SendNoContentAsync(RequestInformation requestInfo, Dictionary<string, ParsableFactory<IParsable>> errorMapping = default, CancellationToken cancellationToken = default)
         {
             using var span = startTracingSpan(requestInfo, nameof(SendNoContentAsync));
             var response = await GetHttpResponseMessage(requestInfo, cancellationToken, span);
             requestInfo.Content?.Dispose();
+            var responseHandler = GetResponseHandler(requestInfo);
             if(responseHandler == null)
             {
                 try {
@@ -348,10 +348,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 !errorMapping.TryGetValue(statusCodeAsString, out errorFactory) &&
                 !(statusCodeAsInt >= 400 && statusCodeAsInt < 500 && errorMapping.TryGetValue("4XX", out errorFactory)) &&
                 !(statusCodeAsInt >= 500 && statusCodeAsInt < 600 && errorMapping.TryGetValue("5XX", out errorFactory)))
-                {
-                    activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, false);
-                    throw new ApiException($"The server returned an unexpected status code and no error factory is registered for this code: {statusCodeAsString}");
-                }
+            {
+                activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, false);
+                throw new ApiException($"The server returned an unexpected status code and no error factory is registered for this code: {statusCodeAsString}");
+            }
             activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, true);
 
             var rootNode = await GetRootParseNode(response);
@@ -364,6 +364,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 throw new ApiException($"The server returned an unexpected status code and the error registered for this code failed to deserialize: {statusCodeAsString}");
 
             throw ex;
+        }
+        private static IResponseHandler GetResponseHandler(RequestInformation requestInfo)
+        {
+            return requestInfo.GetRequestOption<ResponseHandlerOption>()?.ResponseHandler;
         }
         private async Task<IParseNode> GetRootParseNode(HttpResponseMessage response)
         {
