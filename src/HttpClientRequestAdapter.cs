@@ -89,7 +89,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(responseHandler == null)
             {
                 try {
-                    await ThrowFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span);
                     if(shouldReturnNull(response)) return default;
                     var rootNode = await GetRootParseNode(response);
                     using var spanForDeserialization = activitySource?.StartActivity(nameof(IParseNode.GetCollectionOfObjectValues));
@@ -120,7 +120,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(responseHandler == null)
             {
                 try {
-                    await ThrowFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span);
                     if(shouldReturnNull(response)) return default;
                     var rootNode = await GetRootParseNode(response);
                     using var spanForDeserialization = activitySource?.StartActivity(nameof(IParseNode.GetCollectionOfPrimitiveValues));
@@ -157,7 +157,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(responseHandler == null)
             {
                 try {
-                    await ThrowFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span);
                     if(shouldReturnNull(response)) return default;
                     var rootNode = await GetRootParseNode(response);
                     if (rootNode == null) return default;
@@ -193,7 +193,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(responseHandler == null)
             {
                 try {
-                    await ThrowFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span);
                     if(shouldReturnNull(response)) return default;
                     var modelType = typeof(ModelType);
                     if(modelType == typeof(Stream))
@@ -298,7 +298,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(responseHandler == null)
             {
                 try {
-                    await ThrowFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span);
                 } finally {
                     await DrainAsync(response);
                 }
@@ -334,9 +334,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// The attribute name used to indicate whether the error response contained a body.
         /// </summary>
         public const string ErrorBodyFoundAttributeName = "com.microsoft.kiota.error.body_found";
-        private async Task ThrowFailedResponse(HttpResponseMessage response, Dictionary<string, ParsableFactory<IParsable>> errorMapping, Activity activityForAttributes)
+        private async Task ThrowIfFailedResponse(HttpResponseMessage response, Dictionary<string, ParsableFactory<IParsable>> errorMapping, Activity activityForAttributes)
         {
-            using var span = activitySource?.StartActivity(nameof(ThrowFailedResponse));
+            using var span = activitySource?.StartActivity(nameof(ThrowIfFailedResponse));
             if(response.IsSuccessStatusCode) return;
 
             activityForAttributes?.SetStatus(ActivityStatusCode.Error, "received_error_response");
