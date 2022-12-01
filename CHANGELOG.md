@@ -11,11 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [1.0.0-preview.12] - 2022-12-01
+
+### Changed
+
+- Fixes RetryHandler to return the real wait time
+
 ## [1.0.0-preview.11] - 2022-10-17
 
 ### Changed
 
-- Changes the ResponeHandler parameter in IRequestAdapter to be a RequestOption
+- Changes the ResponseHandler parameter in IRequestAdapter to be a RequestOption
 
 ## [1.0.0-preview.10] - 2022-09-19
 

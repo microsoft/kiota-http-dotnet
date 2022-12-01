@@ -199,6 +199,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             }
 
             TimeSpan delayTimeSpan = TimeSpan.FromSeconds(Math.Min(delayInSeconds, RetryHandlerOption.MaxDelay));
+            delayInSeconds=delayTimeSpan.TotalSeconds;
             return Task.Delay(delayTimeSpan, cancellationToken);
         }
 
