@@ -101,8 +101,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
             Assert.NotNull(clonedRequest);
             Assert.Equal(originalRequest.Method, clonedRequest.Method);
             Assert.Equal(originalRequest.RequestUri, clonedRequest.RequestUri);
-            Assert.NotEmpty(clonedRequest.Options);
-            Assert.Equal(redirectHandlerOption, clonedRequest.Options.First().Value);
+            Assert.NotEmpty(clonedRequest.Properties);
+            Assert.Equal(redirectHandlerOption, clonedRequest.Properties.First().Value);
             Assert.Equal(originalRequest.Content?.Headers.ContentType, clonedRequest.Content?.Headers.ContentType);
         }
 

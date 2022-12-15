@@ -324,7 +324,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         }
         private bool shouldReturnNull(HttpResponseMessage response)
         {
-            return response.StatusCode == HttpStatusCode.NoContent;
+            return response.StatusCode == HttpStatusCode.NoContent || response.Content == null;
         }
         /// <summary>
         /// The attribute name used to indicate whether an error code mapping was found.
@@ -372,7 +372,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         private async Task<IParseNode> GetRootParseNode(HttpResponseMessage response)
         {
             using var span = activitySource?.StartActivity(nameof(GetRootParseNode));
-            var responseContentType = response.Content.Headers?.ContentType?.MediaType?.ToLowerInvariant();
+            var responseContentType = response.Content?.Headers?.ContentType?.MediaType?.ToLowerInvariant();
             if(string.IsNullOrEmpty(responseContentType))
                 return null;
             using var contentStream = await response.Content.ReadAsStreamAsync();
@@ -511,15 +511,25 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(backingStoreFactory != null)
                 BackingStoreFactorySingleton.Instance = backingStoreFactory;
         }
+
         /// <summary>
         /// Dispose/cleanup the client
         /// </summary>
         public void Dispose()
         {
-            if(createdClient)
-                client?.Dispose();
+            Dispose(true);
             activitySource?.Dispose();
             GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Dispose/cleanup the client
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            // Cleanup
+            if(createdClient)
+                client?.Dispose();
         }
     }
 }
