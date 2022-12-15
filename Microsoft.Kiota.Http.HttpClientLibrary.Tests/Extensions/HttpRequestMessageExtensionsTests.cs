@@ -101,8 +101,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
             Assert.NotNull(clonedRequest);
             Assert.Equal(originalRequest.Method, clonedRequest.Method);
             Assert.Equal(originalRequest.RequestUri, clonedRequest.RequestUri);
+#pragma warning disable CS0618 // Type or member is obsolete
             Assert.NotEmpty(clonedRequest.Properties);
             Assert.Equal(redirectHandlerOption, clonedRequest.Properties.First().Value);
+#pragma warning restore CS0618 // Type or member is obsolete
             Assert.Equal(originalRequest.Content?.Headers.ContentType, clonedRequest.Content?.Headers.ContentType);
         }
 
