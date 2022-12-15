@@ -5,6 +5,9 @@
     <IsPackable>false</IsPackable>
     <LangVersion>latest</LangVersion>
     <OutputType>Library</OutputType>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\src\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>

@@ -62,6 +62,15 @@ stages:
           pwsh: true
         enabled: true
 
+      - task: PowerShell@2
+        displayName: 'Enable signing'
+        inputs:
+          targetType: filePath
+          filePath: 'scripts\EnableSigning.ps1'
+          arguments: '-projectPath "$(Build.SourcesDirectory)/Microsoft.Kiota.Http.HttpClientLibrary.Tests/Microsoft.Kiota.Http.HttpClientLibrary.Tests.csproj"'
+          pwsh: true
+        enabled: true
+
       # Build the Product project
       - task: DotNetCoreCLI@2
         displayName: 'Build Microsoft.Kiota.Http.HttpClientLibrary'

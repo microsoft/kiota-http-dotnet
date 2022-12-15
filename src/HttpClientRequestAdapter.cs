@@ -518,8 +518,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         public void Dispose()
         {
             Dispose(true);
-            activitySource?.Dispose();
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -529,7 +527,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         {
             // Cleanup
             if(createdClient)
+            {
+                activitySource?.Dispose();
                 client?.Dispose();
+                GC.SuppressFinalize(this);
+            }
         }
     }
 }

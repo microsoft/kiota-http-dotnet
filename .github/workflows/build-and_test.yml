@@ -25,8 +25,8 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ${{ env.solutionName }}
       - name: Build
-        run: dotnet build ${{ env.solutionName }} --no-restore -c Release /p:UseSharedCompilation=false
+        run: dotnet build ${{ env.solutionName }} --no-restore -c Debug /p:UseSharedCompilation=false
       - name: Test
-        run: dotnet test ${{ env.solutionName }} --no-build --verbosity normal -c Release /p:CollectCoverage=true /p:CoverletOutput=TestResults/ /p:CoverletOutputFormat=opencover
+        run: dotnet test ${{ env.solutionName }} --no-build --verbosity normal -c Debug /p:CollectCoverage=true /p:CoverletOutput=TestResults/ /p:CoverletOutputFormat=opencover
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
