@@ -85,7 +85,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
         [InlineData(HttpStatusCode.MovedPermanently)]  // 301
         [InlineData(HttpStatusCode.Found)]  // 302
         [InlineData(HttpStatusCode.TemporaryRedirect)]  // 307
-        [InlineData(HttpStatusCode.PermanentRedirect)] // 308
+        [InlineData((HttpStatusCode)308)] // 308 not available in netstandard
         public async Task ShouldRedirectSameMethodAndContent(HttpStatusCode statusCode)
         {
             // Arrange
@@ -130,7 +130,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
         [InlineData(HttpStatusCode.MovedPermanently)]  // 301
         [InlineData(HttpStatusCode.Found)]  // 302
         [InlineData(HttpStatusCode.TemporaryRedirect)]  // 307
-        [InlineData(HttpStatusCode.PermanentRedirect)] // 308
+        [InlineData((HttpStatusCode)308)] // 308
         public async Task RedirectWithDifferentHostShouldRemoveAuthHeader(HttpStatusCode statusCode)
         {
             // Arrange
@@ -151,7 +151,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
         [InlineData(HttpStatusCode.MovedPermanently)]  // 301
         [InlineData(HttpStatusCode.Found)]  // 302
         [InlineData(HttpStatusCode.TemporaryRedirect)]  // 307
-        [InlineData(HttpStatusCode.PermanentRedirect)] // 308
+        [InlineData((HttpStatusCode)308)] // 308
         public async Task RedirectWithDifferentSchemeThrowsInvalidOperationExceptionIfAllowRedirectOnSchemeChangeIsDisabled(HttpStatusCode statusCode)
         {
             // Arrange
@@ -172,7 +172,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
         [InlineData(HttpStatusCode.MovedPermanently)]  // 301
         [InlineData(HttpStatusCode.Found)]  // 302
         [InlineData(HttpStatusCode.TemporaryRedirect)]  // 307
-        [InlineData(HttpStatusCode.PermanentRedirect)] // 308
+        [InlineData((HttpStatusCode)308)] // 308
         public async Task RedirectWithDifferentSchemeShouldRemoveAuthHeaderIfAllowRedirectOnSchemeChangeIsEnabled(HttpStatusCode statusCode)
         {
             // Arrange

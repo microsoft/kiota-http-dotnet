@@ -38,7 +38,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             }
 
             // Assert
-            Assert.True(responses.ContainsKey(HttpStatusCode.TooManyRequests));
+            Assert.True(responses.ContainsKey((HttpStatusCode)429));
             Assert.True(responses.ContainsKey(HttpStatusCode.ServiceUnavailable));
             Assert.True(responses.ContainsKey(HttpStatusCode.GatewayTimeout));
         }
@@ -80,7 +80,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             }
 
             // Assert
-            Assert.True(responses.ContainsKey(HttpStatusCode.TooManyRequests));
+            Assert.True(responses.ContainsKey((HttpStatusCode)429));
             Assert.True(responses.ContainsKey(HttpStatusCode.InternalServerError));
             Assert.True(responses.ContainsKey(HttpStatusCode.BadGateway));
             Assert.True(responses.ContainsKey(HttpStatusCode.ServiceUnavailable));
@@ -109,25 +109,22 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
                 InnerHandler = new FakeSuccessHandler()
             };
 
-            var invoker = new HttpMessageInvoker(handler);
-
-
             // Act
             var request1 = new HttpRequestMessage
             {
                 RequestUri = new Uri("http://example.org/success")
             };
-            var response1 = await invoker.SendAsync(request1, new CancellationToken());
+            var response1 = await new HttpMessageInvoker(handler).SendAsync(request1, new CancellationToken());
 
             var request2 = new HttpRequestMessage
             {
                 RequestUri = new Uri("http://example.org/fail")
             };
-            var response2 = await invoker.SendAsync(request2, new CancellationToken());
+            var response2 = await new HttpMessageInvoker(handler).SendAsync(request2, new CancellationToken());
 
             // Assert
             Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
-            Assert.Equal(HttpStatusCode.TooManyRequests, response2.StatusCode);
+            Assert.Equal((HttpStatusCode)429, response2.StatusCode);
         }
 
     }

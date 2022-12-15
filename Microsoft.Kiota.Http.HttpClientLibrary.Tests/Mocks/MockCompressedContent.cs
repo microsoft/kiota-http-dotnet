@@ -13,15 +13,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Mocks
         public MockCompressedContent(HttpContent httpContent)
         {
             _originalContent = httpContent;
-            foreach(var (key, value) in _originalContent.Headers)
-                Headers.TryAddWithoutValidation(key, value);
+            foreach(var header in _originalContent.Headers)
+                Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             Stream compressedStream = new GZipStream(stream, CompressionMode.Compress, true);
             await _originalContent.CopyToAsync(compressedStream);
-            await compressedStream.DisposeAsync();
+            compressedStream.Dispose();
         }
 
         protected override bool TryComputeLength(out long length)
