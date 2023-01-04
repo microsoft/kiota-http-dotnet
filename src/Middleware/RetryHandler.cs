@@ -52,7 +52,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(httpRequest == null)
                 throw new ArgumentNullException(nameof(httpRequest));
 
-            RetryOption = httpRequest.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
+            var retryOption = httpRequest.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
             ActivitySource activitySource;
             Activity activity;
             if (httpRequest.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
@@ -69,9 +69,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 var response = await base.SendAsync(httpRequest, cancellationToken);
 
                 // Check whether retries are permitted and that the MaxRetry value is a non - negative, non - zero value
-                if(httpRequest.IsBuffered() && RetryOption.MaxRetry > 0 && (ShouldRetry(response.StatusCode) || RetryOption.ShouldRetry(RetryOption.Delay, 0, response)))
+                if(httpRequest.IsBuffered() && retryOption.MaxRetry > 0 && (ShouldRetry(response.StatusCode) || retryOption.ShouldRetry(retryOption.Delay, 0, response)))
                 {
-                    response = await SendRetryAsync(response, cancellationToken, activitySource);
+                    response = await SendRetryAsync(response, retryOption, cancellationToken, activitySource);
                 }
 
                 return response;
@@ -88,12 +88,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the retry.</param>
         /// <param name="activitySource">The <see cref="ActivitySource"/> for the retry.</param>
         /// <returns></returns>
-        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response, CancellationToken cancellationToken, ActivitySource activitySource)
+        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response,RetryHandlerOption retryOption, CancellationToken cancellationToken, ActivitySource activitySource)
         {
             int retryCount = 0;
             TimeSpan cumulativeDelay = TimeSpan.Zero;
 
-            while(retryCount < RetryOption.MaxRetry)
+            while(retryCount < retryOption.MaxRetry)
             {
                 using var retryActivity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)} - attempt {retryCount}");
                 retryActivity?.SetTag("http.retry_count", retryCount);
@@ -106,16 +106,16 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 }
 
                 // Call Delay method to get delay time from response's Retry-After header or by exponential backoff
-                Task delay = Delay(response, retryCount, RetryOption.Delay, out double delayInSeconds, cancellationToken);
+                Task delay = Delay(response, retryCount, retryOption.Delay, out double delayInSeconds, cancellationToken);
 
                 // If client specified a retries time limit, let's honor it
-                if(RetryOption.RetriesTimeLimit > TimeSpan.Zero)
+                if(retryOption.RetriesTimeLimit > TimeSpan.Zero)
                 {
                     // Get the cumulative delay time
                     cumulativeDelay += TimeSpan.FromSeconds(delayInSeconds);
 
                     // Check whether delay will exceed the client-specified retries time limit value
-                    if(cumulativeDelay > RetryOption.RetriesTimeLimit)
+                    if(cumulativeDelay > retryOption.RetriesTimeLimit)
                     {
                         return response;
                     }
@@ -134,7 +134,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 // Call base.SendAsync to send the request
                 response = await base.SendAsync(request, cancellationToken);
 
-                if(!(request.IsBuffered() && (ShouldRetry(response.StatusCode) || RetryOption.ShouldRetry(RetryOption.Delay, retryCount, response))))
+                if(!(request.IsBuffered() && (ShouldRetry(response.StatusCode) || retryOption.ShouldRetry(retryOption.Delay, retryCount, response))))
                 {
                     return response;
                 }
