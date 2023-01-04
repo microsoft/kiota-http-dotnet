@@ -85,6 +85,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// Retry sending the HTTP request
         /// </summary>
         /// <param name="response">The <see cref="HttpResponseMessage"/> which is returned and includes the HTTP request needs to be retried.</param>
+        /// <param name="retryOption">The <see cref="RetryHandlerOption"/> for the retry.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the retry.</param>
         /// <param name="activitySource">The <see cref="ActivitySource"/> for the retry.</param>
         /// <returns></returns>
