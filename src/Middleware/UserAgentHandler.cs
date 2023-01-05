@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -29,14 +30,30 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            var userAgentHandlerOption = request.GetRequestOption<UserAgentHandlerOption>() ?? _userAgentOption;
-
-            if(userAgentHandlerOption.Enabled &&
-                !request.Headers.UserAgent.Any(x => x.Product.Name.Equals(userAgentHandlerOption.ProductName, StringComparison.OrdinalIgnoreCase)))
-            {
-                request.Headers.UserAgent.Add(new ProductInfoHeaderValue(userAgentHandlerOption.ProductName, userAgentHandlerOption.ProductVersion));
+            ActivitySource activitySource;
+            Activity activity;
+            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                activity = activitySource?.StartActivity($"{nameof(UserAgentHandler)}_{nameof(SendAsync)}");
+                activity?.SetTag("com.microsoft.kiota.handler.useragent.enable", true);
+            } else {
+                activity = null;
+                activitySource = null;
             }
-            return base.SendAsync(request, cancellationToken);
+            try {
+                using var redirectActivity = activitySource?.StartActivity($"{nameof(UserAgentHandler)}_{nameof(SendAsync)}");
+                var userAgentHandlerOption = request.GetRequestOption<UserAgentHandlerOption>() ?? _userAgentOption;
+
+                if(userAgentHandlerOption.Enabled &&
+                    !request.Headers.UserAgent.Any(x => x.Product.Name.Equals(userAgentHandlerOption.ProductName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    request.Headers.UserAgent.Add(new ProductInfoHeaderValue(userAgentHandlerOption.ProductName, userAgentHandlerOption.ProductVersion));
+                }
+                return base.SendAsync(request, cancellationToken);
+            } finally {
+                activity?.Dispose();
+                activitySource?.Dispose();
+            }
         }
     }
 }
