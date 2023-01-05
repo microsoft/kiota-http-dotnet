@@ -2,6 +2,9 @@
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using Microsoft.Kiota.Abstractions;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options
@@ -22,6 +25,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options
         /// <summary>
         /// The product version to append to the user agent header
         /// </summary>
-        public string ProductVersion { get; set; } = typeof(UserAgentHandlerOption).Assembly.GetName().Version.ToString();
+        public string ProductVersion { get; set; } = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion.Split('+').First();
     }
 }
