@@ -77,6 +77,30 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.Equal(requestMessage,response.RequestMessage);
         }
 
+        [Fact]
+        public async Task DoesntAddProductTwice()
+        {
+            // Arrange
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri("http://localhost"),
+            };
+            var defaultOption = new UserAgentHandlerOption();
+            // Act and get a request message
+            var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
+            Assert.Empty(requestMessage.Headers);
+
+            // Act
+            var response = await _invoker.SendAsync(requestMessage, new CancellationToken());
+            response = await _invoker.SendAsync(requestMessage, new CancellationToken());
+
+            // Assert
+            Assert.Single(response.RequestMessage?.Headers!);
+            Assert.Single(response.RequestMessage?.Headers!.UserAgent);
+            Assert.Equal(response.RequestMessage?.Headers!.UserAgent.ToString(), $"{defaultOption.ProductName}/{defaultOption.ProductVersion}", StringComparer.OrdinalIgnoreCase);
+        }
+
     }
 
 }
