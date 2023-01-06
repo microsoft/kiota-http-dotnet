@@ -41,7 +41,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 activitySource = null;
             }
             try {
-                using var redirectActivity = activitySource?.StartActivity($"{nameof(UserAgentHandler)}_{nameof(SendAsync)}");
                 var userAgentHandlerOption = request.GetRequestOption<UserAgentHandlerOption>() ?? _userAgentOption;
 
                 if(userAgentHandlerOption.Enabled &&
