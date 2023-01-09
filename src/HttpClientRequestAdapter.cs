@@ -393,7 +393,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             var additionalAuthenticationContext = string.IsNullOrEmpty(claims) ? null : new Dictionary<string, object> { { ClaimsKey, claims } };
             await authProvider.AuthenticateRequestAsync(requestInfo, additionalAuthenticationContext, cancellationToken);
 
-            using var message = GetRequestMessageFromRequestInformationInternal(requestInfo, activityForAttributes);
+            using var message = GetRequestMessageFromRequestInformation(requestInfo, activityForAttributes);
             var response = await this.client.SendAsync(message,cancellationToken);
             if(response == null)
             {
@@ -449,16 +449,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         {
             requestInfo.PathParameters.TryAdd("baseurl", BaseUrl);
         }
-        /// <summary>
-        /// Creates a <see cref="HttpRequestMessage"/> instance from a <see cref="RequestInformation"/> instance.
-        /// </summary>
-        /// <param name="requestInfo">The <see cref="RequestInformation"/> instance to convert.</param>
-        /// <returns>A <see cref="HttpRequestMessage"/> instance</returns>
-        public HttpRequestMessage GetRequestMessageFromRequestInformation(RequestInformation requestInfo)
+        /// <inheritdoc/>
+        public async Task<T> ConvertToNativeRequestAsync<T>(RequestInformation requestInfo, CancellationToken cancellationToken = default)
         {
-            return GetRequestMessageFromRequestInformationInternal(requestInfo, null);
+            await authProvider.AuthenticateRequestAsync(requestInfo, null, cancellationToken);
+            if (GetRequestMessageFromRequestInformation(requestInfo, null) is T result)
+                return result;
+            else throw new InvalidOperationException($"Could not convert the request information to a {typeof(T).Name}");
         }
-        private HttpRequestMessage GetRequestMessageFromRequestInformationInternal(RequestInformation requestInfo, Activity activityForAttributes)
+        private HttpRequestMessage GetRequestMessageFromRequestInformation(RequestInformation requestInfo, Activity activityForAttributes)
         {
             using var span = activitySource?.StartActivity(nameof(GetRequestMessageFromRequestInformation));
             SetBaseUrlForRequestInformation(requestInfo);// this method can also be called from a different context so ensure the baseUrl is added.

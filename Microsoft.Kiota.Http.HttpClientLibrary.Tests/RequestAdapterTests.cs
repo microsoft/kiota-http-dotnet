@@ -53,7 +53,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
 
 
         [Fact]
-        public void GetRequestMessageFromRequestInformationWithBaseUrlTemplate()
+        public async Task GetRequestMessageFromRequestInformationWithBaseUrlTemplate()
         {
             // Arrange
             requestAdapter.BaseUrl = "http://localhost";
@@ -64,7 +64,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             };
 
             // Act
-            var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
+            var requestMessage = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
 
             // Assert
             Assert.NotNull(requestMessage.RequestUri);
@@ -76,7 +76,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         [InlineData("count", true, "count=true")]
         [InlineData("skip", 10, "skip=10")]
         [InlineData("skip", null, "")]// query parameter no placed
-        public void GetRequestMessageFromRequestInformationSetsQueryParametersCorrectlyWithSelect(string queryParam, object queryParamObject, string expectedString)
+        public async Task GetRequestMessageFromRequestInformationSetsQueryParametersCorrectlyWithSelect(string queryParam, object queryParamObject, string expectedString)
         {
             // Arrange
             var requestInfo = new RequestInformation
@@ -87,7 +87,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             requestInfo.QueryParameters.Add(queryParam, queryParamObject);
 
             // Act
-            var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
+            var requestMessage = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
 
             // Assert
             Assert.NotNull(requestMessage.RequestUri);
@@ -95,7 +95,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         }
 
         [Fact]
-        public void GetRequestMessageFromRequestInformationSetsContentHeaders()
+        public async Task GetRequestMessageFromRequestInformationSetsContentHeaders()
         {
             // Arrange
             var requestInfo = new RequestInformation
@@ -108,7 +108,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             requestInfo.SetStreamContent(new MemoryStream(Encoding.UTF8.GetBytes("contents")));
 
             // Act
-            var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
+            var requestMessage = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
 
             // Assert
             Assert.NotNull(requestMessage.Content);
