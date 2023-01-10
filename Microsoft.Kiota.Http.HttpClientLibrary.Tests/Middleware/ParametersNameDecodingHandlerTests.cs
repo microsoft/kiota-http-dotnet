@@ -38,7 +38,7 @@ public class ParametersDecodingHandlerTests
             URI = new Uri(original)
         };
         // Act and get a request message
-        var requestMessage = requestAdapter.GetRequestMessageFromRequestInformation(requestInfo);
+        var requestMessage = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
 
         // Act
         var response = await _invoker.SendAsync(requestMessage, new CancellationToken());
