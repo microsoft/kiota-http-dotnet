@@ -21,7 +21,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// </summary>
         /// <param name="finalHandler">The final <see cref="HttpMessageHandler"/> in the http pipeline. Can be configured for proxies, auto-decompression and auto-redirects </param>
         /// <returns>The <see cref="HttpClient"/> with the default middlewares.</returns>
-        public static HttpClient Create(HttpMessageHandler finalHandler = null)
+        public static HttpClient Create(HttpMessageHandler? finalHandler = null)
         {
             var defaultHandlers = CreateDefaultHandlers();
             var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), defaultHandlers.ToArray());
@@ -48,7 +48,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <param name="finalHandler">The final <see cref="HttpMessageHandler"/> in the http pipeline. Can be configured for proxies, auto-decompression and auto-redirects </param>
         /// <param name="handlers">The <see cref="DelegatingHandler"/> instances to create the <see cref="DelegatingHandler"/> from.</param>
         /// <returns>The created <see cref="DelegatingHandler"/>.</returns>
-        public static DelegatingHandler ChainHandlersCollectionAndGetFirstLink(HttpMessageHandler finalHandler, params DelegatingHandler[] handlers)
+        public static DelegatingHandler? ChainHandlersCollectionAndGetFirstLink(HttpMessageHandler? finalHandler, params DelegatingHandler[] handlers)
         {
             if(handlers == null || !handlers.Any()) return default;
             var handlersCount = handlers.Length;
@@ -71,7 +71,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// </summary>
         /// <param name="handlers">The <see cref="DelegatingHandler"/> instances to create the <see cref="DelegatingHandler"/> from.</param>
         /// <returns>The created <see cref="DelegatingHandler"/>.</returns>
-        public static DelegatingHandler ChainHandlersCollectionAndGetFirstLink(params DelegatingHandler[] handlers)
+        public static DelegatingHandler? ChainHandlersCollectionAndGetFirstLink(params DelegatingHandler[] handlers)
         {
             return ChainHandlersCollectionAndGetFirstLink(null,handlers);
         }
@@ -80,7 +80,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// </summary>
         /// <param name="proxy">The proxy to be used with created client.</param>
         /// <returns/>
-        public static HttpMessageHandler GetDefaultHttpMessageHandler(IWebProxy proxy = null)
+        public static HttpMessageHandler GetDefaultHttpMessageHandler(IWebProxy? proxy = null)
         {
             return new HttpClientHandler { Proxy = proxy, AllowAutoRedirect = false };
         }

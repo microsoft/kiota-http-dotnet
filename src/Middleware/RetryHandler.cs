@@ -36,7 +36,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// Construct a new <see cref="RetryHandler"/>
         /// </summary>
         /// <param name="retryOption">An OPTIONAL <see cref="RetryHandlerOption"/> to configure <see cref="RetryHandler"/></param>
-        public RetryHandler(RetryHandlerOption retryOption = null)
+        public RetryHandler(RetryHandlerOption? retryOption = null)
         {
             RetryOption = retryOption ?? new RetryHandlerOption();
         }
@@ -53,8 +53,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 throw new ArgumentNullException(nameof(httpRequest));
 
             var retryOption = httpRequest.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
-            ActivitySource activitySource;
-            Activity activity;
+            ActivitySource? activitySource;
+            Activity? activity;
             if (httpRequest.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)}");
@@ -89,7 +89,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the retry.</param>
         /// <param name="activitySource">The <see cref="ActivitySource"/> for the retry.</param>
         /// <returns></returns>
-        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response,RetryHandlerOption retryOption, CancellationToken cancellationToken, ActivitySource activitySource)
+        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response,RetryHandlerOption retryOption, CancellationToken cancellationToken, ActivitySource? activitySource)
         {
             int retryCount = 0;
             TimeSpan cumulativeDelay = TimeSpan.Zero;
@@ -123,7 +123,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 }
 
                 // general clone request with internal CloneAsync (see CloneAsync for details) extension method
-                var request = await response.RequestMessage.CloneAsync();
+                var request = await response.RequestMessage!.CloneAsync();
 
                 // Increase retryCount and then update Retry-Attempt in request header
                 retryCount++;
@@ -179,7 +179,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         internal Task Delay(HttpResponseMessage response, int retryCount, int delay, out double delayInSeconds, CancellationToken cancellationToken)
         {
             delayInSeconds = delay;
-            if(response.Headers.TryGetValues(RetryAfter, out IEnumerable<string> values))
+            if(response.Headers.TryGetValues(RetryAfter, out IEnumerable<string>? values))
             {
                 string retryAfter = values.First();
                 // the delay could be in the form of a seconds or a http date. See https://httpwg.org/specs/rfc7231.html#header.retry-after

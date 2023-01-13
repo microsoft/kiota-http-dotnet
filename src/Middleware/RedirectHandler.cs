@@ -22,7 +22,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// Constructs a new <see cref="RedirectHandler"/>
         /// </summary>
         /// <param name="redirectOption">An OPTIONAL <see cref="RedirectHandlerOption"/> to configure <see cref="RedirectHandler"/></param>
-        public RedirectHandler(RedirectHandlerOption redirectOption = null)
+        public RedirectHandler(RedirectHandlerOption? redirectOption = null)
         {
             RedirectOption = redirectOption ?? new RedirectHandlerOption();
         }
@@ -47,8 +47,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             RedirectOption = httpRequestMessage.GetRequestOption<RedirectHandlerOption>() ?? RedirectOption;
 
-            ActivitySource activitySource;
-            Activity activity;
+            ActivitySource? activitySource;
+            Activity? activity;
             if (httpRequestMessage.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)}");
@@ -86,7 +86,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         }
 
                         // general clone request with internal CloneAsync (see CloneAsync for details) extension method
-                        var newRequest = await response.RequestMessage.CloneAsync();
+                        var newRequest = await response.RequestMessage!.CloneAsync();
 
                         // status code == 303: change request method from post to get and content to be null
                         if(response.StatusCode == HttpStatusCode.SeeOther)

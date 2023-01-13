@@ -22,7 +22,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// The <see cref="TelemetryHandlerOption"/> constructor
         /// </summary>
         /// <param name="telemetryHandlerOption">The <see cref="TelemetryHandlerOption"/> instance to configure the telemetry</param>
-        public TelemetryHandler(TelemetryHandlerOption telemetryHandlerOption = null)
+        public TelemetryHandler(TelemetryHandlerOption? telemetryHandlerOption = null)
         {
             this._telemetryHandlerOption = telemetryHandlerOption ?? new TelemetryHandlerOption();
         }

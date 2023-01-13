@@ -25,14 +25,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
     {
         private readonly Random _random;
         private readonly ChaosHandlerOption _chaosHandlerOptions;
-        private List<HttpResponseMessage> _knownFailures;
+        private List<HttpResponseMessage> _knownFailures = new();
         private const string Json = "application/json";
 
         /// <summary>
         /// Create a ChaosHandler.
         /// </summary>
         /// <param name="chaosHandlerOptions">Optional parameter to change default behavior of handler.</param>
-        public ChaosHandler(ChaosHandlerOption chaosHandlerOptions = null)
+        public ChaosHandler(ChaosHandlerOption? chaosHandlerOptions = null)
         {
             _chaosHandlerOptions = chaosHandlerOptions ?? new ChaosHandlerOption();
             _random = new Random(DateTime.Now.Millisecond);
@@ -55,8 +55,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             // Select global or per request options
             var chaosHandlerOptions = request.GetRequestOption<ChaosHandlerOption>() ?? _chaosHandlerOptions;
-            ActivitySource activitySource;
-            Activity activity;
+            ActivitySource? activitySource;
+            Activity? activity;
             if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(ChaosHandler)}_{nameof(SendAsync)}");
@@ -77,7 +77,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 }
                 else if(_random.Next(100) < chaosHandlerOptions.ChaosPercentLevel)
                 {
-                    var chaosResponse = CreateChaosResponse(chaosHandlerOptions.KnownChaos ?? _knownFailures);
+                    var chaosResponse = CreateChaosResponse(chaosHandlerOptions.KnownChaos ?? _knownFailures!);
                     chaosResponse.RequestMessage = request;
                     activity?.AddEvent(new(ChaosHandlerTriggeredEventKey));
                     activity?.SetTag("com.microsoft.kiota.handler.chaos.planned", false);
@@ -98,7 +98,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             return knownFailures[responseIndex];
         }
 
-        private void LoadKnownFailures(List<HttpResponseMessage> knownFailures)
+        private void LoadKnownFailures(List<HttpResponseMessage>? knownFailures)
         {
             if(knownFailures?.Any() ?? false)
             {
@@ -253,12 +253,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             /// <summary>
             /// The error code
             /// </summary>
-            public string Code { get; set; }
+            public string? Code { get; set; }
 
             /// <summary>
             /// The error message
             /// </summary>
-            public string Message { get; set; }
+            public string? Message { get; set; }
         }
     }
 }
