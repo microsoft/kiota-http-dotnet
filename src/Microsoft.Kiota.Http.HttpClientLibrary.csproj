@@ -35,6 +35,7 @@
     <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.0.0-rc.3" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.0" />
     <PackageReference Include="System.Text.Json" Version="7.0.1" />
+    <ProjectReference Include="..\Kiota.Generated\KiotaGenerated.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TF_BUILD)' == 'true'">
