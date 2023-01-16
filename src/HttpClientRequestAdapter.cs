@@ -375,7 +375,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             var responseContentType = response.Content?.Headers?.ContentType?.MediaType?.ToLowerInvariant();
             if(string.IsNullOrEmpty(responseContentType))
                 return null;
-            using var contentStream = await response.Content!.ReadAsStreamAsync();
+            using var contentStream = await (response.Content?.ReadAsStreamAsync() ?? Task.FromResult(Stream.Null));
             var rootNode = pNodeFactory.GetRootParseNode(responseContentType!, contentStream);
             return rootNode;
         }

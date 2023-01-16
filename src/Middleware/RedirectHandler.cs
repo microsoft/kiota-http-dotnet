@@ -86,7 +86,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         }
 
                         // general clone request with internal CloneAsync (see CloneAsync for details) extension method
-                        var newRequest = await response.RequestMessage!.CloneAsync();
+                        var originalRequest = response.RequestMessage;
+                        if (originalRequest == null)
+                        {
+                            return response;// We can't clone the original request to replay it.
+                        }
+                        var newRequest = await originalRequest.CloneAsync();
 
                         // status code == 303: change request method from post to get and content to be null
                         if(response.StatusCode == HttpStatusCode.SeeOther)
