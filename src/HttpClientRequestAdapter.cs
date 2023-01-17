@@ -473,15 +473,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 RequestUri = requestUri,
             };
 
-#if NET6_0
-            if(requestInfo.RequestOptions.Any())
-                requestInfo.RequestOptions.ToList().ForEach(x => IDictionaryExtensions.TryAdd(message.Options,x.GetType().FullName!, x));
-            IDictionaryExtensions.TryAdd(message.Options!, typeof(ObservabilityOptions).FullName, obsOptions);
-#elif NETSTANDARD2_0
             if(requestInfo.RequestOptions.Any())
                 requestInfo.RequestOptions.ToList().ForEach(x => IDictionaryExtensions.TryAdd(message.Properties,x.GetType().FullName!, x));
             IDictionaryExtensions.TryAdd(message.Properties!, typeof(ObservabilityOptions).FullName, obsOptions);
-#endif
 
             if(requestInfo.Content != null && requestInfo.Content != Stream.Null )
                 message.Content = new StreamContent(requestInfo.Content);

@@ -123,7 +123,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 }
 
                 // general clone request with internal CloneAsync (see CloneAsync for details) extension method
-                var request = await response.RequestMessage!.CloneAsync();
+                var originalRequest = response.RequestMessage;
+                if(originalRequest == null)
+                {
+                    return response;// We can't clone the original request to replay it.
+                }
+                var request = await originalRequest.CloneAsync();
 
                 // Increase retryCount and then update Retry-Attempt in request header
                 retryCount++;

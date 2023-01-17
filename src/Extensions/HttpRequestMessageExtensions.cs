@@ -25,11 +25,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
         /// <returns>A request option</returns>
         public static T? GetRequestOption<T>(this HttpRequestMessage httpRequestMessage) where T : IRequestOption
         {
-#if NET6_0
-            if(httpRequestMessage.Options.TryGetValue<object>(new HttpRequestOptionsKey<object>(typeof(T).FullName!), out var requestOption))
-#elif NETSTANDARD2_0
             if(httpRequestMessage.Properties.TryGetValue(typeof(T).FullName!, out var requestOption))
-#endif
             {
                 return (T)requestOption!;
             }
@@ -53,13 +49,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
                 newRequest.Headers.TryAddWithoutValidation(header.Key, header.Value);
 
             // Copy request properties.
-#if NET6_0
-            foreach(var property in originalRequest.Options)
-                IDictionaryExtensions.TryAdd(newRequest.Options, property.Key, property.Value);
-#elif NETSTANDARD2_0
             foreach(var property in originalRequest.Properties)
-                newRequest.Properties.TryAdd(property.Key, property.Value);
-#endif
+                IDictionaryExtensions.TryAdd(newRequest.Properties, property.Key, property.Value);
+
             // Set Content if previous request had one.
             if(originalRequest.Content != null)
             {
