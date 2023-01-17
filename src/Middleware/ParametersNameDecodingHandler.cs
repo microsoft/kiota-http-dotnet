@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------------------
+﻿// ------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ public class ParametersNameDecodingHandler: DelegatingHandler
     /// Constructs a new <see cref="ParametersNameDecodingHandler"/>
     /// </summary>
     /// <param name="options">An OPTIONAL <see cref="ParametersNameDecodingOption"/> to configure <see cref="ParametersNameDecodingHandler"/></param>
-    public ParametersNameDecodingHandler(ParametersNameDecodingOption options = default)
+    public ParametersNameDecodingHandler(ParametersNameDecodingOption? options = default)
     {
         EncodingOptions = options ?? new();
     }
@@ -35,8 +35,8 @@ public class ParametersNameDecodingHandler: DelegatingHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken)
     {
         var options = httpRequestMessage.GetRequestOption<ParametersNameDecodingOption>() ?? EncodingOptions;
-        ActivitySource activitySource;
-        Activity activity;
+        ActivitySource? activitySource;
+        Activity? activity;
         if (httpRequestMessage.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
             activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
             activity = activitySource?.StartActivity($"{nameof(ParametersNameDecodingHandler)}_{nameof(SendAsync)}");
@@ -46,7 +46,7 @@ public class ParametersNameDecodingHandler: DelegatingHandler
             activitySource = null;
         }
         try {
-            if(!httpRequestMessage.RequestUri.Query.Contains('%') ||
+            if(!httpRequestMessage.RequestUri!.Query.Contains('%') ||
                 options == null ||
                 !options.Enabled ||
                 !(options.ParametersToDecode?.Any() ?? false))
@@ -64,13 +64,13 @@ public class ParametersNameDecodingHandler: DelegatingHandler
             activitySource?.Dispose();
         }
     }
-    internal static string DecodeUriEncodedString(string original, IEnumerable<char> charactersToDecode) {
+    internal static string? DecodeUriEncodedString(string? original, IEnumerable<char> charactersToDecode) {
         if (string.IsNullOrEmpty(original) || !(charactersToDecode?.Any() ?? false))
             return original;
         var symbolsToReplace = charactersToDecode.Select(static x => ($"%{Convert.ToInt32(x):X}", x.ToString())).ToArray();
-        foreach(var symbolToReplace in symbolsToReplace.Where(x => original.Contains(x.Item1)))
+        foreach(var symbolToReplace in symbolsToReplace.Where(x => original!.Contains(x.Item1)))
         {
-            original = original.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
+            original = original!.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
         }
         return original;
     }

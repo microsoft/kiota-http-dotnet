@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------------------
+﻿// ------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
@@ -31,8 +31,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(httpRequest == null)
                 throw new ArgumentNullException(nameof(httpRequest));
 
-            ActivitySource activitySource;
-            Activity activity;
+            ActivitySource? activitySource;
+            Activity? activity;
             if (httpRequest.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(CompressionHandler)}_{nameof(SendAsync)}");

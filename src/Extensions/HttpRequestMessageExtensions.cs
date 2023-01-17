@@ -3,6 +3,7 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -22,13 +23,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
         /// <typeparam name="T"></typeparam>
         /// <param name="httpRequestMessage">The <see cref="HttpRequestMessage"/> representation of the request.</param>
         /// <returns>A request option</returns>
-        public static T GetRequestOption<T>(this HttpRequestMessage httpRequestMessage) where T : IRequestOption
+        public static T? GetRequestOption<T>(this HttpRequestMessage httpRequestMessage) where T : IRequestOption
         {
-            if(httpRequestMessage.Properties.TryGetValue(
-                typeof(T).FullName,
-                out var requestOption))
+            if(httpRequestMessage.Properties.TryGetValue(typeof(T).FullName!, out var requestOption))
             {
-                return (T)requestOption;
+                return (T)requestOption!;
             }
             return default;
         }
@@ -51,7 +50,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
 
             // Copy request properties.
             foreach(var property in originalRequest.Properties)
-                newRequest.Properties.TryAdd(property.Key, property.Value);
+                IDictionaryExtensions.TryAdd(newRequest.Properties, property.Key, property.Value);
 
             // Set Content if previous request had one.
             if(originalRequest.Content != null)
@@ -81,7 +80,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
         /// <returns></returns>
         internal static bool IsBuffered(this HttpRequestMessage httpRequestMessage)
         {
-            HttpContent requestContent = httpRequestMessage.Content;
+            HttpContent? requestContent = httpRequestMessage.Content;
 
             if((httpRequestMessage.Method == HttpMethod.Put || httpRequestMessage.Method == HttpMethod.Post || httpRequestMessage.Method.Method.Equals("PATCH", StringComparison.OrdinalIgnoreCase))
                && requestContent != null && (requestContent.Headers.ContentLength == null || (int)requestContent.Headers.ContentLength == -1))

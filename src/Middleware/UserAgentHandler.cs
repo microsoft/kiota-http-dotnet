@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -20,7 +20,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// Creates a new instance of the <see cref="UserAgentHandler"/> class
         /// </summary>
         /// <param name="userAgentHandlerOption">The <see cref="UserAgentHandlerOption"/> instance to configure the user agent extension</param>
-        public UserAgentHandler(UserAgentHandlerOption userAgentHandlerOption = null)
+        public UserAgentHandler(UserAgentHandlerOption? userAgentHandlerOption = null)
         {
             _userAgentOption = userAgentHandlerOption ?? new UserAgentHandlerOption();
         }
@@ -30,8 +30,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            ActivitySource activitySource;
-            Activity activity;
+            ActivitySource? activitySource;
+            Activity? activity;
             if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(UserAgentHandler)}_{nameof(SendAsync)}");
@@ -44,7 +44,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 var userAgentHandlerOption = request.GetRequestOption<UserAgentHandlerOption>() ?? _userAgentOption;
 
                 if(userAgentHandlerOption.Enabled &&
-                    !request.Headers.UserAgent.Any(x => x.Product.Name.Equals(userAgentHandlerOption.ProductName, StringComparison.OrdinalIgnoreCase)))
+                    !request.Headers.UserAgent.Any(x => userAgentHandlerOption.ProductName.Equals(x.Product?.Name, StringComparison.OrdinalIgnoreCase)))
                 {
                     request.Headers.UserAgent.Add(new ProductInfoHeaderValue(userAgentHandlerOption.ProductName, userAgentHandlerOption.ProductVersion));
                 }
