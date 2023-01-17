@@ -25,6 +25,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options
         /// <summary>
         /// The product version to append to the user agent header
         /// </summary>
-        public string ProductVersion { get; set; } = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion!.Split('+').First();
+        public string ProductVersion { get; set; } = Microsoft.Kiota.Http.Generated.Version.Current();
     }
 }
