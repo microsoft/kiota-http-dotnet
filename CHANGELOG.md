@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Aligns the HttpClientRequestAdapter to use the BaseUrl from the RequestAdapter as the baseUrl for making requests. 
+- Aligns the HttpClientRequestAdapter with other langugages to use the BaseUrl from the RequestAdapter as the baseUrl for making requests. 
 
 ## [1.0.0-rc.4] - 2023-01-09
 
