@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -71,6 +72,31 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.Contains("http://localhost/me", requestMessage.RequestUri.OriginalString);
         }
 
+        [Fact]
+        public async Task GetRequestMessageFromRequestInformationUsesBaseUrlFromAdapter()
+        {
+            // Arrange
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "{+baseurl}/me",
+                PathParameters = new Dictionary<string, object>
+                {
+                    { "baseurl", "https://graph.microsoft.com/beta"}//request information with different base url
+                }
+
+            };
+            // Change the baseUrl of the adapter
+            requestAdapter.BaseUrl = "http://localhost";
+
+            // Act
+            var requestMessage = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+
+            // Assert
+            Assert.NotNull(requestMessage.RequestUri);
+            Assert.Contains("http://localhost/me", requestMessage.RequestUri.OriginalString);// Request generated using adapter baseUrl
+        }
+
         [Theory]
         [InlineData("select", new[] { "id", "displayName" }, "select=id,displayName")]
         [InlineData("count", true, "count=true")]
@@ -123,8 +149,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.True(requestMessage.Content.Headers.ContentRange.HasLength);
             // Content type set correctly
             Assert.Equal("application/octet-stream", requestMessage.Content.Headers.ContentType.MediaType);
-
         }
+
         [InlineData(HttpStatusCode.OK)]
         [InlineData(HttpStatusCode.Created)]
         [InlineData(HttpStatusCode.Accepted)]

@@ -447,7 +447,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         }
         private void SetBaseUrlForRequestInformation(RequestInformation requestInfo)
         {
-            IDictionaryExtensions.TryAdd(requestInfo.PathParameters, "baseurl", BaseUrl!);
+            IDictionaryExtensions.AddOrReplace(requestInfo.PathParameters, "baseurl", BaseUrl!);
         }
         /// <inheritdoc/>
         public async Task<T?> ConvertToNativeRequestAsync<T>(RequestInformation requestInfo, CancellationToken cancellationToken = default)
