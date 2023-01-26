@@ -30,25 +30,25 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <summary>
         /// Send a HTTP request
         /// </summary>
-        /// <param name="httpRequest">The HTTP request<see cref="HttpRequestMessage"/>needs to be sent.</param>
+        /// <param name="request">The HTTP request<see cref="HttpRequestMessage"/>needs to be sent.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the request.</param>
         /// <returns></returns>
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if(httpRequest == null)
-                throw new ArgumentNullException(nameof(httpRequest));
+            if(request == null)
+                throw new ArgumentNullException(nameof(request));
 
-            var telemetryHandlerOption = httpRequest.GetRequestOption<TelemetryHandlerOption>() ?? _telemetryHandlerOption;
+            var telemetryHandlerOption = request.GetRequestOption<TelemetryHandlerOption>() ?? _telemetryHandlerOption;
 
             // use the enriched request from the handler
             if(telemetryHandlerOption.TelemetryConfigurator != null)
             {
-                var enrichedRequest = telemetryHandlerOption.TelemetryConfigurator(httpRequest);
+                var enrichedRequest = telemetryHandlerOption.TelemetryConfigurator(request);
                 return await base.SendAsync(enrichedRequest, cancellationToken);
             }
 
             // Just forward the request if TelemetryConfigurator was intentionally set to null
-            return await base.SendAsync(httpRequest, cancellationToken);
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 }
