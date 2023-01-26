@@ -32,12 +32,12 @@ public class ParametersNameDecodingHandler: DelegatingHandler
         EncodingOptions = options ?? new();
     }
     ///<inheritdoc/>
-    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var options = httpRequestMessage.GetRequestOption<ParametersNameDecodingOption>() ?? EncodingOptions;
+        var options = request.GetRequestOption<ParametersNameDecodingOption>() ?? EncodingOptions;
         ActivitySource? activitySource;
         Activity? activity;
-        if (httpRequestMessage.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+        if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
             activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
             activity = activitySource?.StartActivity($"{nameof(ParametersNameDecodingHandler)}_{nameof(SendAsync)}");
             activity?.SetTag("com.microsoft.kiota.handler.parameters_name_decoding.enable", true);
@@ -46,19 +46,19 @@ public class ParametersNameDecodingHandler: DelegatingHandler
             activitySource = null;
         }
         try {
-            if(!httpRequestMessage.RequestUri!.Query.Contains('%') ||
+            if(!request.RequestUri!.Query.Contains('%') ||
                 options == null ||
                 !options.Enabled ||
                 !(options.ParametersToDecode?.Any() ?? false))
             {
-                return base.SendAsync(httpRequestMessage, cancellationToken);
+                return base.SendAsync(request, cancellationToken);
             }
 
-            var originalUri = httpRequestMessage.RequestUri;
+            var originalUri = request.RequestUri;
             var query = DecodeUriEncodedString(originalUri.Query, EncodingOptions.ParametersToDecode);
             var decodedUri = new UriBuilder(originalUri.Scheme, originalUri.Host, originalUri.Port, originalUri.AbsolutePath, query).Uri;
-            httpRequestMessage.RequestUri = decodedUri;
-            return base.SendAsync(httpRequestMessage, cancellationToken);
+            request.RequestUri = decodedUri;
+            return base.SendAsync(request, cancellationToken);
         } finally {
             activity?.Dispose();
             activitySource?.Dispose();

@@ -44,18 +44,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <summary>
         /// Send a HTTP request
         /// </summary>
-        /// <param name="httpRequest">The HTTP request<see cref="HttpRequestMessage"/>needs to be sent.</param>
+        /// <param name="request">The HTTP request<see cref="HttpRequestMessage"/>needs to be sent.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the request.</param>
         /// <returns></returns>
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if(httpRequest == null)
-                throw new ArgumentNullException(nameof(httpRequest));
+            if(request == null)
+                throw new ArgumentNullException(nameof(request));
 
-            var retryOption = httpRequest.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
+            var retryOption = request.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
             ActivitySource? activitySource;
             Activity? activity;
-            if (httpRequest.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.retry.enable", true);
@@ -66,10 +66,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             try {
 
-                var response = await base.SendAsync(httpRequest, cancellationToken);
+                var response = await base.SendAsync(request, cancellationToken);
 
                 // Check whether retries are permitted and that the MaxRetry value is a non - negative, non - zero value
-                if(httpRequest.IsBuffered() && retryOption.MaxRetry > 0 && (ShouldRetry(response.StatusCode) || retryOption.ShouldRetry(retryOption.Delay, 0, response)))
+                if(request.IsBuffered() && retryOption.MaxRetry > 0 && (ShouldRetry(response.StatusCode) || retryOption.ShouldRetry(retryOption.Delay, 0, response)))
                 {
                     response = await SendRetryAsync(response, retryOption, cancellationToken, activitySource);
                 }

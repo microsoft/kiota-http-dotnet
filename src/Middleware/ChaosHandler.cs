@@ -248,7 +248,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <summary>
         /// Private class to model sample responses
         /// </summary>
-        private class Error
+        private sealed class Error
         {
             /// <summary>
             /// The error code

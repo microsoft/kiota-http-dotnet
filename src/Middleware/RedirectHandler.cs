@@ -38,18 +38,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <summary>
         /// Sends the Request and handles redirect responses if needed
         /// </summary>
-        /// <param name="httpRequestMessage">The <see cref="HttpRequestMessage"/> to send.</param>
+        /// <param name="request">The <see cref="HttpRequestMessage"/> to send.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/>for the request.</param>
         /// <returns>The <see cref="HttpResponseMessage"/>.</returns>
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequestMessage, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if(httpRequestMessage == null) throw new ArgumentNullException(nameof(httpRequestMessage));
+            if(request == null) throw new ArgumentNullException(nameof(request));
 
-            RedirectOption = httpRequestMessage.GetRequestOption<RedirectHandlerOption>() ?? RedirectOption;
+            RedirectOption = request.GetRequestOption<RedirectHandlerOption>() ?? RedirectOption;
 
             ActivitySource? activitySource;
             Activity? activity;
-            if (httpRequestMessage.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.redirect.enable", true);
@@ -60,7 +60,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             try {
 
                 // send request first time to get response
-                var response = await base.SendAsync(httpRequestMessage, cancellationToken);
+                var response = await base.SendAsync(request, cancellationToken);
 
                 // check response status code and redirect handler option
                 if(ShouldRedirect(response))
@@ -112,18 +112,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         }
 
                         // Remove Auth if http request's scheme or host changes
-                        if(!newRequest.RequestUri.Host.Equals(httpRequestMessage.RequestUri?.Host) ||
-                        !newRequest.RequestUri.Scheme.Equals(httpRequestMessage.RequestUri?.Scheme))
+                        if(!newRequest.RequestUri.Host.Equals(request.RequestUri?.Host) ||
+                        !newRequest.RequestUri.Scheme.Equals(request.RequestUri?.Scheme))
                         {
                             newRequest.Headers.Authorization = null;
                         }
 
                         // If scheme has changed. Ensure that this has been opted in for security reasons
-                        if(!newRequest.RequestUri.Scheme.Equals(httpRequestMessage.RequestUri?.Scheme) && !RedirectOption.AllowRedirectOnSchemeChange)
+                        if(!newRequest.RequestUri.Scheme.Equals(request.RequestUri?.Scheme) && !RedirectOption.AllowRedirectOnSchemeChange)
                         {
                             throw new InvalidOperationException(
                                 $"Redirects with changing schemes not allowed by default. You can change this by modifying the {nameof(RedirectOption.AllowRedirectOnSchemeChange)} option",
-                                new Exception($"Scheme changed from {httpRequestMessage.RequestUri?.Scheme} to {newRequest.RequestUri.Scheme}."));
+                                new Exception($"Scheme changed from {request.RequestUri?.Scheme} to {newRequest.RequestUri.Scheme}."));
                         }
 
                         // Send redirect request to get response

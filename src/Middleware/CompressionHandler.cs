@@ -23,17 +23,17 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <summary>
         /// Sends a HTTP request.
         /// </summary>
-        /// <param name="httpRequest">The <see cref="HttpRequestMessage"/> to be sent.</param>
+        /// <param name="request">The <see cref="HttpRequestMessage"/> to be sent.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the request.</param>
         /// <returns></returns>
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage httpRequest, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if(httpRequest == null)
-                throw new ArgumentNullException(nameof(httpRequest));
+            if(request == null)
+                throw new ArgumentNullException(nameof(request));
 
             ActivitySource? activitySource;
             Activity? activity;
-            if (httpRequest.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(CompressionHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.compression.enable", true);
@@ -47,12 +47,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 StringWithQualityHeaderValue gzipQHeaderValue = new StringWithQualityHeaderValue(GZip);
 
                 // Add Accept-encoding: gzip header to incoming request if it doesn't have one.
-                if(!httpRequest.Headers.AcceptEncoding.Contains(gzipQHeaderValue))
+                if(!request.Headers.AcceptEncoding.Contains(gzipQHeaderValue))
                 {
-                    httpRequest.Headers.AcceptEncoding.Add(gzipQHeaderValue);
+                    request.Headers.AcceptEncoding.Add(gzipQHeaderValue);
                 }
 
-                HttpResponseMessage response = await base.SendAsync(httpRequest, cancellationToken);
+                HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
 
                 // Decompress response content when Content-Encoding: gzip header is present.
                 if(ShouldDecompressContent(response))

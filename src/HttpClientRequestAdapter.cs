@@ -65,7 +65,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// </summary>
         public string? BaseUrl { get; set; }
         private static readonly char[] charactersToDecodeForUriTemplate = new char[] { '$', '.', '-', '~' };
-        private static readonly Regex queryParametersCleanupRegex = new (@"\{\?[^\}]+}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        private static readonly Regex queryParametersCleanupRegex = new (@"\{\?[^\}]+}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromMilliseconds(100));
         private Activity? startTracingSpan(RequestInformation requestInfo, string methodName) {
             var decodedUriTemplate = ParametersNameDecodingHandler.DecodeUriEncodedString(requestInfo.UrlTemplate, charactersToDecodeForUriTemplate);
             var telemetryPathValue = queryParametersCleanupRegex.Replace(decodedUriTemplate!, string.Empty);
@@ -418,7 +418,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
 
             return await RetryCAEResponseIfRequired(response, requestInfo, cancellationToken, claims, activityForAttributes);
         }
-        private static readonly Regex caeValueRegex = new("\"([^\"]*)\"", RegexOptions.Compiled);
+        private static readonly Regex caeValueRegex = new("\"([^\"]*)\"", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
         /// <summary>
         /// The key for the event raised by tracing when an authentication challenge is received
         /// </summary>
