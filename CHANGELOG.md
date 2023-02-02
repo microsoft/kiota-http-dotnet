@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [1.0.0-rc.6] - 2023-02-03
+
+### Added
+
+- Added the HTTP response status code on API exception.
+
 ## [1.0.0-rc.5] - 2023-01-23
 
 ### Changed
 
-- Aligns the HttpClientRequestAdapter with other langugages to use the BaseUrl from the RequestAdapter as the baseUrl for making requests. 
+- Aligns the HttpClientRequestAdapter with other langugages to use the BaseUrl from the RequestAdapter as the baseUrl for making requests.
 
 ## [1.0.0-rc.4] - 2023-01-09
 
