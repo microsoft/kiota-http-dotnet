@@ -350,7 +350,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 !(statusCodeAsInt >= 500 && statusCodeAsInt < 600 && errorMapping.TryGetValue("5XX", out errorFactory)))
             {
                 activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, false);
-                throw new ApiException($"The server returned an unexpected status code and no error factory is registered for this code: {statusCodeAsString}");
+                throw new ApiException($"The server returned an unexpected status code and no error factory is registered for this code: {statusCodeAsString}") {
+                    ResponseStatusCode = statusCodeAsInt,
+                };
             }
             activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, true);
 
@@ -361,8 +363,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             SetResponseType(result, activityForAttributes);
             spanForDeserialization?.Dispose();
             if(result is not Exception ex)
-                throw new ApiException($"The server returned an unexpected status code and the error registered for this code failed to deserialize: {statusCodeAsString}");
-
+                throw new ApiException($"The server returned an unexpected status code and the error registered for this code failed to deserialize: {statusCodeAsString}") {
+                    ResponseStatusCode = statusCodeAsInt,
+                };
+            if(result is ApiException apiEx)
+                apiEx.ResponseStatusCode = statusCodeAsInt;
             throw ex;
         }
         private static IResponseHandler? GetResponseHandler(RequestInformation requestInfo)

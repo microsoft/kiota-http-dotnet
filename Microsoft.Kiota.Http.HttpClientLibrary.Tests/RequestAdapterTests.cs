@@ -316,5 +316,29 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
 
             mockHandler.Protected().Verify("SendAsync", Times.Exactly(2), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
         }
+        [InlineData(HttpStatusCode.NotFound)]
+        [InlineData(HttpStatusCode.BadGateway)]
+        [Theory]
+        public async void SetsTheApiExceptionStatusCode(HttpStatusCode statusCode) {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage {
+                StatusCode = statusCode,
+            });
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+            try {
+                var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo);
+                Assert.Fail("Expected an ApiException to be thrown");
+            } catch (ApiException e) {
+                Assert.Equal((int)statusCode, e.ResponseStatusCode);
+            }
+        }
     }
 }
