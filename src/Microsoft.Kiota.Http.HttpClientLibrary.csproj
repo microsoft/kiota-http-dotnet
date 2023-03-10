@@ -13,7 +13,7 @@
     <PackageProjectUrl>https://microsoft.github.io/kiota/</PackageProjectUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Deterministic>true</Deterministic>
-    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionPrefix>1.0.1</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Enable this line once we go live to prevent breaking changes -->
@@ -35,9 +35,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.0.0" />
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.1" />
-    <PackageReference Include="System.Text.Json" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.0.1" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[6.0,8.0)" />
+    <PackageReference Include="System.Text.Json" Version="[6.0,8.0)" />
     <ProjectReference Include="..\Kiota.Generated\KiotaGenerated.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
