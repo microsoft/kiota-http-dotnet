@@ -35,10 +35,10 @@ stages:
           version: 7.x
 
       - task: UseDotNet@2
-        displayName: 'Use .NET 2.x (for code signing tasks)'
+        displayName: 'Use .NET 6 (for code signing tasks)'
         inputs:
           packageType: sdk
-          version: 2.x
+          version: 6.x
 
       - task: PoliCheck@2
         displayName: 'Run PoliCheck "/src"'
@@ -135,12 +135,13 @@ stages:
           CredScan: true
           PoliCheck: true
 
-      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+      - task: EsrpCodeSigning@2
         displayName: 'ESRP DLL Strong Name'
         inputs:
           ConnectedServiceName: 'microsoftgraph ESRP CodeSign DLL and NuGet (AKV)'
           FolderPath: $(ProductBinPath)
-          Pattern: Microsoft.Kiota.Http.HttpClientLibrary.dll
+          UseMinimatch: true
+          Pattern: '**\*Microsoft.Kiota.Http.HttpClientLibrary.dll'
           signConfigType: inlineSignParams
           inlineOperation: |
             [
@@ -161,11 +162,13 @@ stages:
             ]
           SessionTimeout: 20
 
-      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+      - task: EsrpCodeSigning@2
         displayName: 'ESRP DLL CodeSigning'
         inputs:
           ConnectedServiceName: 'microsoftgraph ESRP CodeSign DLL and NuGet (AKV)'
           FolderPath: src
+          Pattern: '**\*Microsoft.Kiota.Http.HttpClientLibrary.dll'
+          UseMinimatch: true
           signConfigType: inlineSignParams
           inlineOperation: |
             [
@@ -222,11 +225,12 @@ stages:
           arguments: '-projectPath "$(Build.SourcesDirectory)/src/Microsoft.Kiota.Http.HttpClientLibrary.csproj" -packageName "Microsoft.Kiota.Http.HttpClientLibrary"'
           pwsh: true
 
-      - task: SFP.build-tasks.custom-build-task-1.EsrpCodeSigning@1
+      - task: EsrpCodeSigning@2
         displayName: 'ESRP CodeSigning Nuget Packages'
         inputs:
           ConnectedServiceName: 'microsoftgraph ESRP CodeSign DLL and NuGet (AKV)'
           FolderPath: '$(Build.ArtifactStagingDirectory)'
+          UseMinimatch: true
           Pattern: '*.nupkg'
           signConfigType: inlineSignParams
           inlineOperation: |
