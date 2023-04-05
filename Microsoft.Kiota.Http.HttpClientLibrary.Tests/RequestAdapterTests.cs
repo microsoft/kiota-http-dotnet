@@ -324,9 +324,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             var client = new HttpClient(mockHandler.Object);
             mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(new HttpResponseMessage {
-                StatusCode = statusCode,
-            });
+            .ReturnsAsync(() => {
+                                    var responseMessage = new HttpResponseMessage
+                                    {
+                                        StatusCode = statusCode
+                                    };
+                                    responseMessage.Headers.Add("request-id", "guid-value");
+                                    return responseMessage;
+                                });
             var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
             var requestInfo = new RequestInformation
             {
@@ -338,6 +343,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                 Assert.Fail("Expected an ApiException to be thrown");
             } catch (ApiException e) {
                 Assert.Equal((int)statusCode, e.ResponseStatusCode);
+                Assert.True(e.ResponseHeaders.ContainsKey("request-id"));
             }
         }
     }
