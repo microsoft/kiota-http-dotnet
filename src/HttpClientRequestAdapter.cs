@@ -343,6 +343,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
 
             var statusCodeAsInt = (int)response.StatusCode;
             var statusCodeAsString = statusCodeAsInt.ToString();
+            var responseHeadersDictionary = response.Headers.ToDictionary(x => x.Key,y => y.Value,StringComparer.OrdinalIgnoreCase);
             ParsableFactory<IParsable>? errorFactory;
             if(errorMapping == null ||
                 !errorMapping.TryGetValue(statusCodeAsString, out errorFactory) &&
@@ -352,6 +353,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, false);
                 throw new ApiException($"The server returned an unexpected status code and no error factory is registered for this code: {statusCodeAsString}") {
                     ResponseStatusCode = statusCodeAsInt,
+                    ResponseHeaders = responseHeadersDictionary
                 };
             }
             activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, true);
@@ -365,9 +367,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(result is not Exception ex)
                 throw new ApiException($"The server returned an unexpected status code and the error registered for this code failed to deserialize: {statusCodeAsString}") {
                     ResponseStatusCode = statusCodeAsInt,
+                    ResponseHeaders = responseHeadersDictionary
                 };
             if(result is ApiException apiEx)
+            {
                 apiEx.ResponseStatusCode = statusCodeAsInt;
+                apiEx.ResponseHeaders = responseHeadersDictionary;
+            }
+                
             throw ex;
         }
         private static IResponseHandler? GetResponseHandler(RequestInformation requestInfo)

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [1.0.2] - 2023-04-06
+
+### Changed
+
+- Includes Response headers in APIException for failed requests.
+
 ## [1.0.1] - 2023-03-10
 
 ### Changed
