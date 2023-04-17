@@ -343,7 +343,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
 
             var statusCodeAsInt = (int)response.StatusCode;
             var statusCodeAsString = statusCodeAsInt.ToString();
-            var responseHeadersDictionary = response.Headers.ToDictionary(x => x.Key,y => y.Value);
+            var responseHeadersDictionary = response.Headers.ToDictionary(x => x.Key,y => y.Value,StringComparer.OrdinalIgnoreCase);
             ParsableFactory<IParsable>? errorFactory;
             if(errorMapping == null ||
                 !errorMapping.TryGetValue(statusCodeAsString, out errorFactory) &&
