@@ -47,6 +47,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             authProvider = authenticationProvider ?? throw new ArgumentNullException(nameof(authenticationProvider));
             createdClient = httpClient == null;
             client = httpClient ?? KiotaClientFactory.Create();
+            BaseUrl = client.BaseAddress.ToString();
             pNodeFactory = parseNodeFactory ?? ParseNodeFactoryRegistry.DefaultInstance;
             sWriterFactory = serializationWriterFactory ?? SerializationWriterFactoryRegistry.DefaultInstance;
             obsOptions = observabilityOptions ?? new ObservabilityOptions();
@@ -374,7 +375,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 apiEx.ResponseStatusCode = statusCodeAsInt;
                 apiEx.ResponseHeaders = responseHeadersDictionary;
             }
-                
+
             throw ex;
         }
         private static IResponseHandler? GetResponseHandler(RequestInformation requestInfo)
