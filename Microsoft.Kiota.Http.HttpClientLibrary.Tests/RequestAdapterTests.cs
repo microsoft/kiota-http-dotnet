@@ -151,6 +151,29 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.Equal("application/octet-stream", requestMessage.Content.Headers.ContentType.MediaType);
         }
 
+        [Fact]
+        public async void SendMethodDoesNotThrowWithoutUrlTemplate() {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes("Test")))
+                });
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri("https://example.com")
+            };
+
+            var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo);
+
+            Assert.True(response.CanRead);
+            Assert.Equal(4, response.Length);
+        }
+
         [InlineData(HttpStatusCode.OK)]
         [InlineData(HttpStatusCode.Created)]
         [InlineData(HttpStatusCode.Accepted)]
@@ -177,6 +200,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
 
             Assert.True(response.CanRead);
             Assert.Equal(4, response.Length);
+            var streamReader = new StreamReader(response);
+            var responseString = await streamReader.ReadToEndAsync();
+            Assert.Equal("Test",responseString);
         }
         [InlineData(HttpStatusCode.OK)]
         [InlineData(HttpStatusCode.Created)]

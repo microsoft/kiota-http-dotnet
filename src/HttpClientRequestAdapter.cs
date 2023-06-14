@@ -69,7 +69,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         private static readonly Regex queryParametersCleanupRegex = new (@"\{\?[^\}]+}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromMilliseconds(100));
         private Activity? startTracingSpan(RequestInformation requestInfo, string methodName) {
             var decodedUriTemplate = ParametersNameDecodingHandler.DecodeUriEncodedString(requestInfo.UrlTemplate, charactersToDecodeForUriTemplate);
-            var telemetryPathValue = queryParametersCleanupRegex.Replace(decodedUriTemplate!, string.Empty);
+            var telemetryPathValue = string.IsNullOrEmpty(decodedUriTemplate) ? string.Empty : queryParametersCleanupRegex.Replace(decodedUriTemplate, string.Empty);
             var span = activitySource?.StartActivity($"{methodName} - {telemetryPathValue}");
             span?.SetTag("http.uri_template", decodedUriTemplate);
             return span;
@@ -188,7 +188,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         public async Task<ModelType?> SendPrimitiveAsync<ModelType>(RequestInformation requestInfo, Dictionary<string, ParsableFactory<IParsable>>? errorMapping = default, CancellationToken cancellationToken = default)
         {
             using var span = startTracingSpan(requestInfo, nameof(SendPrimitiveAsync));
-            var response = await GetHttpResponseMessage(requestInfo, cancellationToken, span);
+            var modelType = typeof(ModelType);
+            var isStreamResponse = modelType == typeof(Stream);
+            var response = await GetHttpResponseMessage(requestInfo, cancellationToken, span, isStreamResponse: isStreamResponse);
             requestInfo.Content?.Dispose();
             var responseHandler = GetResponseHandler(requestInfo);
             if(responseHandler == null)
@@ -196,8 +198,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 try {
                     await ThrowIfFailedResponse(response, errorMapping, span);
                     if(shouldReturnNull(response)) return default;
-                    var modelType = typeof(ModelType);
-                    if(modelType == typeof(Stream))
+                    if(isStreamResponse)
                     {
                         var result = await response.Content.ReadAsStreamAsync();
                         if (result.Length == 0) {
@@ -325,7 +326,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         }
         private bool shouldReturnNull(HttpResponseMessage response)
         {
-            return response.StatusCode == HttpStatusCode.NoContent || response.Content == null;
+            return response.StatusCode == HttpStatusCode.NoContent
+                   || response.Content == null
+                   || response.Content.GetType().Name.Equals("EmptyContent",StringComparison.OrdinalIgnoreCase);// In NET 5 and above, Content is never null but represented by the internal class EmptyContent
+                                                                                                                // which MAY return instances of EmptyReadStream on reading(which is not seekable thus we can't read/get the length)
+                                                                                                                // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Net.Http/src/System/Net/Http/EmptyReadStream.cs
         }
         /// <summary>
         /// The attribute name used to indicate whether an error code mapping was found.
@@ -395,7 +400,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         private const string ClaimsKey = "claims";
         private const string BearerAuthenticationScheme = "Bearer";
         private static Func<AuthenticationHeaderValue, bool> filterAuthHeader = static x => x.Scheme.Equals(BearerAuthenticationScheme, StringComparison.OrdinalIgnoreCase);
-        private async Task<HttpResponseMessage> GetHttpResponseMessage(RequestInformation requestInfo, CancellationToken cancellationToken, Activity? activityForAttributes, string? claims = default)
+        private async Task<HttpResponseMessage> GetHttpResponseMessage(RequestInformation requestInfo, CancellationToken cancellationToken, Activity? activityForAttributes, string? claims = default, bool isStreamResponse = false)
         {
             using var span = activitySource?.StartActivity(nameof(GetHttpResponseMessage));
             if(requestInfo == null)
@@ -407,7 +412,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             await authProvider.AuthenticateRequestAsync(requestInfo, additionalAuthenticationContext, cancellationToken);
 
             using var message = GetRequestMessageFromRequestInformation(requestInfo, activityForAttributes);
-            var response = await this.client.SendAsync(message,cancellationToken);
+            var response = isStreamResponse ? await this.client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead ,cancellationToken) :
+                                                await this.client.SendAsync(message, cancellationToken);
             if(response == null)
             {
                 var ex = new InvalidOperationException("Could not get a response after calling the service");

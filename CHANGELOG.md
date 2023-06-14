@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2023-06-15
+
+- Fixes a bug where NullReference Exception is thrown if a requestInformation is sent without providing UriTemplate
+- RequestAdapter passes `HttpCompletionOption.ResponseHeadersRead` to HttpClient for Stream responses to avoid memory consumption for large payloads.
+
 ## [1.0.3] - 2023-06-09
 
 - Added propagating the HttpClientRequestAdapter's supplied HttpClient BaseAddress as the adapter's initial BaseUrl
