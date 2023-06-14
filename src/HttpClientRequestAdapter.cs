@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
@@ -201,7 +201,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     if(isStreamResponse)
                     {
                         var result = await response.Content.ReadAsStreamAsync();
-                        if (result.Length == 0) {
+                        if (result.CanSeek && result.Length == 0) {
                             result.Dispose();
                             return default;
                         }
