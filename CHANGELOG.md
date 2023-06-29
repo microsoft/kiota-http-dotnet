@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2023-06-29
+
+- Fixes regression in request building when the passed httpClient base address ends with a `\`
+
 ## [1.0.4] - 2023-06-15
 
 - Fixes a bug where NullReference Exception is thrown if a requestInformation is sent without providing UriTemplate

@@ -36,6 +36,30 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         }
 
         [Fact]
+        public void BaseUrlIsSetAsExpected()
+        {
+            var httpClientRequestAdapter = new HttpClientRequestAdapter(_authenticationProvider);
+            Assert.Null(httpClientRequestAdapter.BaseUrl);// url is null
+
+            httpClientRequestAdapter.BaseUrl = "https://graph.microsoft.com/v1.0";
+            Assert.Equal("https://graph.microsoft.com/v1.0", httpClientRequestAdapter.BaseUrl);// url is set as expected
+
+            httpClientRequestAdapter.BaseUrl = "https://graph.microsoft.com/v1.0/";
+            Assert.Equal("https://graph.microsoft.com/v1.0", httpClientRequestAdapter.BaseUrl);// url is does not have the last `/` character
+        }
+
+        [Fact]
+        public void BaseUrlIsSetFromHttpClient()
+        {
+            var httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://graph.microsoft.com/v1.0/");
+            var httpClientRequestAdapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: httpClient);
+
+            Assert.NotNull(httpClientRequestAdapter.BaseUrl);// url is not null
+            Assert.Equal("https://graph.microsoft.com/v1.0", httpClientRequestAdapter.BaseUrl);// url is does not have the last `/` character
+        }
+
+        [Fact]
         public void EnablesBackingStore()
         {
             // Arrange

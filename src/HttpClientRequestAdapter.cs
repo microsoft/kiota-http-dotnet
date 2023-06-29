@@ -1,4 +1,4 @@
-// ------------------------------------------------------------------------------
+﻿// ------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
@@ -31,6 +31,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         private readonly IAuthenticationProvider authProvider;
         private IParseNodeFactory pNodeFactory;
         private ISerializationWriterFactory sWriterFactory;
+        private string? baseUrl;
         private readonly bool createdClient;
         private readonly ObservabilityOptions obsOptions;
         private readonly ActivitySource activitySource;
@@ -64,7 +65,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <summary>
         /// The base url for every request.
         /// </summary>
-        public string? BaseUrl { get; set; }
+        public string? BaseUrl
+        {
+            get => baseUrl;
+            set => this.baseUrl = value?.TrimEnd('/');
+        }
         private static readonly char[] charactersToDecodeForUriTemplate = new char[] { '$', '.', '-', '~' };
         private static readonly Regex queryParametersCleanupRegex = new (@"\{\?[^\}]+}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromMilliseconds(100));
         private Activity? startTracingSpan(RequestInformation requestInfo, string methodName) {
