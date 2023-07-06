@@ -290,7 +290,37 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             mockHandler.Protected()
             .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage {
+                StatusCode = statusCode
+            });
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+
+            var response = await adapter.SendAsync<MockEntity>(requestInfo, MockEntity.Factory);
+
+            Assert.Null(response);
+        }
+
+        [InlineData(HttpStatusCode.OK)]
+        [InlineData(HttpStatusCode.Created)]
+        [InlineData(HttpStatusCode.Accepted)]
+        [InlineData(HttpStatusCode.NonAuthoritativeInformation)]
+        [InlineData(HttpStatusCode.NoContent)]
+        [InlineData(HttpStatusCode.ResetContent)]
+        [Theory]
+        public async void SendReturnsNullOnNoContentWithContentHeaderPresent(HttpStatusCode statusCode)
+        {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(new HttpResponseMessage
+            {
                 StatusCode = statusCode,
+                Content = new StringContent(string.Empty, Encoding.UTF8, "application/json")
             });
             var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client);
             var requestInfo = new RequestInformation

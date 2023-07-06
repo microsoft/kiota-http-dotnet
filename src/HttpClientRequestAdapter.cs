@@ -399,6 +399,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(string.IsNullOrEmpty(responseContentType))
                 return null;
             using var contentStream = await (response.Content?.ReadAsStreamAsync() ?? Task.FromResult(Stream.Null));
+            if(contentStream == Stream.Null || (contentStream.CanSeek && contentStream.Length == 0))
+                return null;// ensure a usefule stream is passed to the factory
             var rootNode = pNodeFactory.GetRootParseNode(responseContentType!, contentStream);
             return rootNode;
         }
