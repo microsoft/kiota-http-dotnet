@@ -40,6 +40,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 new RedirectHandler(),
                 new ParametersNameDecodingHandler(),
                 new UserAgentHandler(),
+                new HeadersInspectionHandler(),
             };
         }
         /// <summary>
