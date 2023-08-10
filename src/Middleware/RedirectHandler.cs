@@ -32,7 +32,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// </summary>
         internal RedirectHandlerOption RedirectOption
         {
-            get; set;
+            get; private set;
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         {
             if(request == null) throw new ArgumentNullException(nameof(request));
 
-            RedirectOption = request.GetRequestOption<RedirectHandlerOption>() ?? RedirectOption;
+            var redirectOption = request.GetRequestOption<RedirectHandlerOption>() ?? RedirectOption;
 
             ActivitySource? activitySource;
             Activity? activity;
@@ -63,7 +63,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 var response = await base.SendAsync(request, cancellationToken);
 
                 // check response status code and redirect handler option
-                if(ShouldRedirect(response))
+                if(ShouldRedirect(response, redirectOption))
                 {
                     if(response.Headers.Location == null)
                     {
@@ -74,7 +74,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
                     var redirectCount = 0;
 
-                    while(redirectCount < RedirectOption.MaxRedirect)
+                    while(redirectCount < redirectOption.MaxRedirect)
                     {
                         using var redirectActivity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)} - redirect {redirectCount}");
                         redirectActivity?.SetTag("com.microsoft.kiota.handler.redirect.count", redirectCount);
@@ -119,10 +119,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         }
 
                         // If scheme has changed. Ensure that this has been opted in for security reasons
-                        if(!newRequest.RequestUri.Scheme.Equals(request.RequestUri?.Scheme) && !RedirectOption.AllowRedirectOnSchemeChange)
+                        if(!newRequest.RequestUri.Scheme.Equals(request.RequestUri?.Scheme) && !redirectOption.AllowRedirectOnSchemeChange)
                         {
                             throw new InvalidOperationException(
-                                $"Redirects with changing schemes not allowed by default. You can change this by modifying the {nameof(RedirectOption.AllowRedirectOnSchemeChange)} option",
+                                $"Redirects with changing schemes not allowed by default. You can change this by modifying the {nameof(redirectOption.AllowRedirectOnSchemeChange)} option",
                                 new Exception($"Scheme changed from {request.RequestUri?.Scheme} to {newRequest.RequestUri.Scheme}."));
                         }
 
@@ -130,7 +130,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         response = await base.SendAsync(newRequest, cancellationToken);
 
                         // Check response status code
-                        if(ShouldRedirect(response))
+                        if(ShouldRedirect(response, redirectOption))
                         {
                             redirectCount++;
                         }
@@ -151,9 +151,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             }
         }
 
-        private bool ShouldRedirect(HttpResponseMessage responseMessage)
+        private bool ShouldRedirect(HttpResponseMessage responseMessage, RedirectHandlerOption redirectOption)
         {
-            return IsRedirect(responseMessage.StatusCode) && RedirectOption.ShouldRedirect(responseMessage) && RedirectOption.MaxRedirect > 0;
+            return IsRedirect(responseMessage.StatusCode) && redirectOption.ShouldRedirect(responseMessage) && redirectOption.MaxRedirect > 0;
         }
 
         /// <summary>
