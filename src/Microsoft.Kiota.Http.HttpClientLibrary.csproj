@@ -14,7 +14,7 @@
     <PackageProjectUrl>https://aka.ms/kiota/docs</PackageProjectUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Deterministic>true</Deterministic>
-    <VersionPrefix>1.0.6</VersionPrefix>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Enable this line once we go live to prevent breaking changes -->
