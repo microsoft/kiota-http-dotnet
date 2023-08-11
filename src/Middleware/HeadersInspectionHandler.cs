@@ -31,35 +31,45 @@ public class HeadersInspectionHandler : DelegatingHandler
     {
         if(request == null) throw new ArgumentNullException(nameof(request));
 
-            var options = request.GetRequestOption<HeadersInspectionHandlerOption>() ?? _defaultOptions;
+        var options = request.GetRequestOption<HeadersInspectionHandlerOption>() ?? _defaultOptions;
 
-            ActivitySource? activitySource;
-            Activity? activity;
-            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
-                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
-                activity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)}");
-                activity?.SetTag("com.microsoft.kiota.handler.headersInspection.enable", true);
-            } else {
-                activity = null;
-                activitySource = null;
-            }
-            try {
-                if (options.InspectRequestHeaders) {
-                    foreach (var header in request.Headers) {
-                        options.RequestHeaders[header.Key] = string.Join(",", header.Value);
-                    }
+        ActivitySource? activitySource;
+        Activity? activity;
+        if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+        {
+            activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+            activity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)}");
+            activity?.SetTag("com.microsoft.kiota.handler.headersInspection.enable", true);
+        }
+        else
+        {
+            activity = null;
+            activitySource = null;
+        }
+        try
+        {
+            if(options.InspectRequestHeaders)
+            {
+                foreach(var header in request.Headers)
+                {
+                    options.RequestHeaders[header.Key] = string.Join(",", header.Value);
                 }
-                var response = await base.SendAsync(request, cancellationToken);
-                if (options.InspectResponseHeaders) {
-                    foreach (var header in response.Headers) {
-                        options.ResponseHeaders[header.Key] = string.Join(",", header.Value);
-                    }
-                }
-                return response;
-            } finally {
-                activity?.Dispose();
-                activitySource?.Dispose();
             }
+            var response = await base.SendAsync(request, cancellationToken);
+            if(options.InspectResponseHeaders)
+            {
+                foreach(var header in response.Headers)
+                {
+                    options.ResponseHeaders[header.Key] = string.Join(",", header.Value);
+                }
+            }
+            return response;
+        }
+        finally
+        {
+            activity?.Dispose();
+            activitySource?.Dispose();
+        }
 
     }
 
