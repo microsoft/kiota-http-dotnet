@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
@@ -33,7 +34,7 @@ public class HeadersInspectionHandlerTests : IDisposable
         var response = await invoker.SendAsync(request, default);
 
         // Then
-        Assert.Equal("test", option.RequestHeaders["test"]);
+        Assert.Equal("test", option.RequestHeaders["test"].First());
         Assert.Empty(option.ResponseHeaders);
     }
     [Fact]
@@ -50,7 +51,7 @@ public class HeadersInspectionHandlerTests : IDisposable
         var response = await invoker.SendAsync(request, default);
 
         // Then
-        Assert.Equal("test", option.ResponseHeaders["test"]);
+        Assert.Equal("test", option.ResponseHeaders["test"].First());
         Assert.Empty(option.RequestHeaders);
     }
     private HttpMessageInvoker GetMessageInvoker(HeadersInspectionHandlerOption option = null)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,7 +53,7 @@ public class HeadersInspectionHandler : DelegatingHandler
             {
                 foreach(var header in request.Headers)
                 {
-                    options.RequestHeaders[header.Key] = string.Join(",", header.Value);
+                    options.RequestHeaders[header.Key] = header.Value.ToArray();
                 }
             }
             var response = await base.SendAsync(request, cancellationToken);
@@ -60,7 +61,7 @@ public class HeadersInspectionHandler : DelegatingHandler
             {
                 foreach(var header in response.Headers)
                 {
-                    options.ResponseHeaders[header.Key] = string.Join(",", header.Value);
+                    options.ResponseHeaders[header.Key] = header.Value.ToArray();
                 }
             }
             return response;
