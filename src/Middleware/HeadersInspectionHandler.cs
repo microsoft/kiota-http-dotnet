@@ -55,6 +55,11 @@ public class HeadersInspectionHandler : DelegatingHandler
                 {
                     options.RequestHeaders[header.Key] = header.Value.ToArray();
                 }
+                if(request.Content != null)
+                    foreach(var contentHeaders in request.Content.Headers)
+                    {
+                        options.RequestHeaders[contentHeaders.Key] = contentHeaders.Value.ToArray();
+                    }
             }
             var response = await base.SendAsync(request, cancellationToken);
             if(options.InspectResponseHeaders)
@@ -63,6 +68,11 @@ public class HeadersInspectionHandler : DelegatingHandler
                 {
                     options.ResponseHeaders[header.Key] = header.Value.ToArray();
                 }
+                if(response.Content != null)
+                    foreach(var contentHeaders in response.Content.Headers)
+                    {
+                        options.ResponseHeaders[contentHeaders.Key] = contentHeaders.Value.ToArray();
+                    }
             }
             return response;
         }
