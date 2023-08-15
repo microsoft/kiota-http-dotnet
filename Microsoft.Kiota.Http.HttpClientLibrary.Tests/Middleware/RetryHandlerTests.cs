@@ -25,17 +25,17 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
 
         public RetryHandlerTests()
         {
-            this._testHttpMessageHandler = new MockRedirectHandler();
-            this._retryHandler = new RetryHandler
+            _testHttpMessageHandler = new MockRedirectHandler();
+            _retryHandler = new RetryHandler
             {
-                InnerHandler = this._testHttpMessageHandler
+                InnerHandler = _testHttpMessageHandler
             };
-            this._invoker = new HttpMessageInvoker(this._retryHandler);
+            _invoker = new HttpMessageInvoker(_retryHandler);
         }
 
         public void Dispose()
         {
-            this._invoker.Dispose();
+            _invoker.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -81,9 +81,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             // Arrange
             var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, "http://example.org/foo");
             var retryResponse = new HttpResponseMessage(HttpStatusCode.OK);
-            this._testHttpMessageHandler.SetHttpResponse(retryResponse);
+            _testHttpMessageHandler.SetHttpResponse(retryResponse);
             // Act
-            var response = await this._invoker.SendAsync(httpRequestMessage, new CancellationToken());
+            var response = await _invoker.SendAsync(httpRequestMessage, new CancellationToken());
             // Assert
             Assert.Same(response, retryResponse);
             Assert.NotNull(response.RequestMessage);
@@ -247,7 +247,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             var retryResponse = new HttpResponseMessage(statusCode);
             var futureTime = DateTime.Now + TimeSpan.FromSeconds(3);// 3 seconds from now
             var futureTimeString = futureTime.ToString(CultureInfo.InvariantCulture.DateTimeFormat.RFC1123Pattern);
-            Assert.Contains("GMT",futureTimeString); // http date always end in GMT according to the spec
+            Assert.Contains("GMT", futureTimeString); // http date always end in GMT according to the spec
             retryResponse.Headers.TryAddWithoutValidation(RetryAfter, futureTimeString);
             // Act
             await DelayTestWithMessage(retryResponse, 1, "Init");

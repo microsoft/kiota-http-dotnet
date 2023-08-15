@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2023-08-11
+
+### Added
+
+- Added headers inspection handler to allow clients to observe request and response headers.
+
 ## [1.0.6] - 2023-07-06
 
-- Fixes a bug where empty streams would be passed to the serializers if the response content header is set. 
+- Fixes a bug where empty streams would be passed to the serializers if the response content header is set.
 
 ## [1.0.5] - 2023-06-29
 

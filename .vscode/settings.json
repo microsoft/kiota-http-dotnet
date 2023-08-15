@@ -1,5 +1,7 @@
 {
 	"cSpell.words": [
 		"kiota"
-	]
+	],
+    "dotnet.defaultSolution": "Microsoft.Kiota.Http.HttpClientLibrary.sln",
+    "editor.formatOnSave": true
 }
