@@ -17,7 +17,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3.0.3
         with:
-          dotnet-version: 7.0.307 # Lock down version till https://github.com/microsoft/vstest/issues/4549 is released
+          dotnet-version: 7.x
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
