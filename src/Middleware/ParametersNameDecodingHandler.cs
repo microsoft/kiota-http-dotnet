@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
@@ -55,7 +55,7 @@ public class ParametersNameDecodingHandler: DelegatingHandler
             }
 
             var originalUri = request.RequestUri;
-            var query = DecodeUriEncodedString(originalUri.Query, EncodingOptions.ParametersToDecode);
+            var query = DecodeUriEncodedString(originalUri.Query, options.ParametersToDecode.ToArray());
             var decodedUri = new UriBuilder(originalUri.Scheme, originalUri.Host, originalUri.Port, originalUri.AbsolutePath, query).Uri;
             request.RequestUri = decodedUri;
             return base.SendAsync(request, cancellationToken);
@@ -64,14 +64,24 @@ public class ParametersNameDecodingHandler: DelegatingHandler
             activitySource?.Dispose();
         }
     }
-    internal static string? DecodeUriEncodedString(string? original, IEnumerable<char> charactersToDecode) {
+    internal static string? DecodeUriEncodedString(string? original, char[] charactersToDecode) {
         if (string.IsNullOrEmpty(original) || !(charactersToDecode?.Any() ?? false))
             return original;
-        var symbolsToReplace = charactersToDecode.Select(static x => ($"%{Convert.ToInt32(x):X}", x.ToString())).ToArray();
-        foreach(var symbolToReplace in symbolsToReplace.Where(x => original!.Contains(x.Item1)))
+        var symbolsToReplace = charactersToDecode.Select(static x => ($"%{Convert.ToInt32(x):X}", x.ToString())).Where(x => original!.Contains(x.Item1)).ToArray();
+
+        var encodedParameterValues = original!.TrimStart('?')
+            .Split(new []{'&'}, StringSplitOptions.RemoveEmptyEntries)
+            .Select(static part => part.Split(new []{'='}, StringSplitOptions.RemoveEmptyEntries)[0])
+            .Where(static x => x.Contains('%'))// only pull out params with `%` (encoded)
+            .ToArray();
+
+        foreach(var parameter in encodedParameterValues)
         {
-            original = original!.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
+            var updatedParameterName = symbolsToReplace.Where(x => parameter!.Contains(x.Item1))
+                .Aggregate(parameter, (current, symbolToReplace) => current!.Replace(symbolToReplace.Item1, symbolToReplace.Item2));
+            original = original.Replace(parameter, updatedParameterName);
         }
+
         return original;
     }
 }
