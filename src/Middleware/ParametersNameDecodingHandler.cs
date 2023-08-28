@@ -39,7 +39,7 @@ public class ParametersNameDecodingHandler: DelegatingHandler
         Activity? activity;
         if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
             activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
-            activity = activitySource?.StartActivity($"{nameof(ParametersNameDecodingHandler)}_{nameof(SendAsync)}");
+            activity = activitySource.StartActivity($"{nameof(ParametersNameDecodingHandler)}_{nameof(SendAsync)}");
             activity?.SetTag("com.microsoft.kiota.handler.parameters_name_decoding.enable", true);
         } else {
             activity = null;
@@ -47,7 +47,6 @@ public class ParametersNameDecodingHandler: DelegatingHandler
         }
         try {
             if(!request.RequestUri!.Query.Contains('%') ||
-                options == null ||
                 !options.Enabled ||
                 !(options.ParametersToDecode?.Any() ?? false))
             {
