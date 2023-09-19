@@ -139,7 +139,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.NotNull(response.RequestMessage);
             Assert.NotNull(response.RequestMessage.Content);
             Assert.NotNull(response.RequestMessage.Content.Headers.ContentLength);
-            Assert.Equal("Hello World", response.RequestMessage.Content.ReadAsStringAsync().Result);
+            Assert.Equal("Hello World", await response.RequestMessage.Content.ReadAsStringAsync());
 
         }
 
