@@ -34,6 +34,7 @@
     <IsTrimmable>true</IsTrimmable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);NU5048</NoWarn>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
