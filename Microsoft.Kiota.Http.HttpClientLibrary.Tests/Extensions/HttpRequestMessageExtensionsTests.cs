@@ -15,7 +15,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
     public class HttpRequestMessageExtensionsTests
     {
         private readonly HttpClientRequestAdapter requestAdapter;
-        public HttpRequestMessageExtensionsTests () {
+        public HttpRequestMessageExtensionsTests()
+        {
             requestAdapter = new HttpClientRequestAdapter(new AnonymousAuthenticationProvider());
         }
         [Fact]
@@ -66,7 +67,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
                 HttpMethod = Method.GET,
                 URI = new Uri("http://localhost")
             };
-            requestInfo.SetStreamContent(new MemoryStream(Encoding.UTF8.GetBytes("contents")));
+            requestInfo.SetStreamContent(new MemoryStream(Encoding.UTF8.GetBytes("contents")), "application/octet-stream");
             var originalRequest = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
             originalRequest.Content = new StringContent("contents");
 
@@ -101,10 +102,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
             Assert.NotNull(clonedRequest);
             Assert.Equal(originalRequest.Method, clonedRequest.Method);
             Assert.Equal(originalRequest.RequestUri, clonedRequest.RequestUri);
-#if NET6_0_OR_GREATER
+#if NET5_0_OR_GREATER
             Assert.NotEmpty(clonedRequest.Options);
             Assert.Equal(redirectHandlerOption, clonedRequest.Options.First().Value);
-#elif NET462_OR_GREATER
+#else
             Assert.NotEmpty(clonedRequest.Properties);
             Assert.Equal(redirectHandlerOption, clonedRequest.Properties.First().Value);
 #endif
