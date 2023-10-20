@@ -16,7 +16,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
     /// <summary>
     /// A <see cref="DelegatingHandler"/> implementation for handling redirection of requests.
     /// </summary>
-    public class RedirectHandler: DelegatingHandler
+    public class RedirectHandler : DelegatingHandler
     {
         /// <summary>
         /// Constructs a new <see cref="RedirectHandler"/>
@@ -49,15 +49,19 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             ActivitySource? activitySource;
             Activity? activity;
-            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+            {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(RedirectHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.redirect.enable", true);
-            } else {
+            }
+            else
+            {
                 activity = null;
                 activitySource = null;
             }
-            try {
+            try
+            {
 
                 // send request first time to get response
                 var response = await base.SendAsync(request, cancellationToken);
@@ -82,16 +86,20 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         // Drain response content to free responses.
                         if(response.Content != null)
                         {
-                            await response.Content.ReadAsByteArrayAsync();
+#if NET5_0_OR_GREATER
+                            await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+#else
+                            await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+#endif
                         }
 
                         // general clone request with internal CloneAsync (see CloneAsync for details) extension method
                         var originalRequest = response.RequestMessage;
-                        if (originalRequest == null)
+                        if(originalRequest == null)
                         {
                             return response;// We can't clone the original request to replay it.
                         }
-                        var newRequest = await originalRequest.CloneAsync();
+                        var newRequest = await originalRequest.CloneAsync(cancellationToken);
 
                         // status code == 303: change request method from post to get and content to be null
                         if(response.StatusCode == HttpStatusCode.SeeOther)
@@ -145,7 +153,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         new Exception($"Max redirects exceeded. Redirect count : {redirectCount}"));
                 }
                 return response;
-            } finally {
+            }
+            finally
+            {
                 activity?.Dispose();
                 activitySource?.Dispose();
             }

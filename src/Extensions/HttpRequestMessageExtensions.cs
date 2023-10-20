@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Extensions;
@@ -40,11 +41,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
         /// Create a new HTTP request by copying previous HTTP request's headers and properties from response's request message.
         /// </summary>
         /// <param name="originalRequest">The previous <see cref="HttpRequestMessage"/> needs to be copy.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the request.</param>
         /// <returns>The <see cref="HttpRequestMessage"/>.</returns>
         /// <remarks>
         /// Re-issue a new HTTP request with the previous request's headers and properties
         /// </remarks>
-        internal static async Task<HttpRequestMessage> CloneAsync(this HttpRequestMessage originalRequest)
+        internal static async Task<HttpRequestMessage> CloneAsync(this HttpRequestMessage originalRequest, CancellationToken cancellationToken = default)
         {
             var newRequest = new HttpRequestMessage(originalRequest.Method, originalRequest.RequestUri);
 
@@ -68,7 +70,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
             if(originalRequest.Content != null)
             {
                 // HttpClient doesn't rewind streams and we have to explicitly do so.
+#if NET5_0_OR_GREATER
+                var contentStream = await originalRequest.Content.ReadAsStreamAsync(cancellationToken);
+#else
                 var contentStream = await originalRequest.Content.ReadAsStreamAsync();
+#endif
 
                 if(contentStream.CanSeek)
                     contentStream.Seek(0, SeekOrigin.Begin);
