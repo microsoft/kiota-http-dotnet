@@ -56,9 +56,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
 #if NET5_0_OR_GREATER
             foreach(var property in originalRequest.Options)
                 if(property.Value is IRequestOption requestOption)
-                    originalRequest.Options.Set(new HttpRequestOptionsKey<IRequestOption>(property.Key), requestOption);
+                    newRequest.Options.Set(new HttpRequestOptionsKey<IRequestOption>(property.Key), requestOption);
                 else
-                    originalRequest.Options.Set(new HttpRequestOptionsKey<object?>(property.Key), (object?)property.Value);
+                    newRequest.Options.Set(new HttpRequestOptionsKey<object?>(property.Key), property.Value);
 #else
             foreach(var property in originalRequest.Properties)
                 IDictionaryExtensions.TryAdd(newRequest.Properties, property.Key, property.Value);
