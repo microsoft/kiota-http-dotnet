@@ -97,9 +97,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 try
                 {
-                    await ThrowIfFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span, cancellationToken);
                     if(shouldReturnNull(response)) return default;
-                    var rootNode = await GetRootParseNode(response);
+                    var rootNode = await GetRootParseNode(response, cancellationToken);
                     using var spanForDeserialization = activitySource?.StartActivity(nameof(IParseNode.GetCollectionOfObjectValues));
                     var result = rootNode?.GetCollectionOfObjectValues<ModelType>(factory);
                     SetResponseType(result, span);
@@ -107,7 +107,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 }
                 finally
                 {
-                    await DrainAsync(response);
+                    await DrainAsync(response, cancellationToken);
                 }
             }
             else
@@ -133,9 +133,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 try
                 {
-                    await ThrowIfFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span, cancellationToken);
                     if(shouldReturnNull(response)) return default;
-                    var rootNode = await GetRootParseNode(response);
+                    var rootNode = await GetRootParseNode(response, cancellationToken);
                     using var spanForDeserialization = activitySource?.StartActivity(nameof(IParseNode.GetCollectionOfPrimitiveValues));
                     var result = rootNode?.GetCollectionOfPrimitiveValues<ModelType>();
                     SetResponseType(result, span);
@@ -143,7 +143,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 }
                 finally
                 {
-                    await DrainAsync(response);
+                    await DrainAsync(response, cancellationToken);
                 }
             }
             else
@@ -174,9 +174,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 try
                 {
-                    await ThrowIfFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span, cancellationToken);
                     if(shouldReturnNull(response)) return default;
-                    var rootNode = await GetRootParseNode(response);
+                    var rootNode = await GetRootParseNode(response, cancellationToken);
                     if(rootNode == null) return default;
                     using var spanForDeserialization = activitySource?.StartActivity(nameof(IParseNode.GetObjectValue));
                     var result = rootNode.GetObjectValue<ModelType>(factory);
@@ -187,7 +187,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 {
                     if(typeof(ModelType) != typeof(Stream))
                     {
-                        await DrainAsync(response);
+                        await DrainAsync(response, cancellationToken);
                     }
                 }
             }
@@ -216,11 +216,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 try
                 {
-                    await ThrowIfFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span, cancellationToken);
                     if(shouldReturnNull(response)) return default;
                     if(isStreamResponse)
                     {
+#if NET5_0_OR_GREATER
+                        var result = await response.Content.ReadAsStreamAsync(cancellationToken);
+#else
                         var result = await response.Content.ReadAsStreamAsync();
+#endif
                         if(result.CanSeek && result.Length == 0)
                         {
                             result.Dispose();
@@ -231,7 +235,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                     }
                     else
                     {
-                        var rootNode = await GetRootParseNode(response);
+                        var rootNode = await GetRootParseNode(response, cancellationToken);
                         object? result;
                         using var spanForDeserialization = activitySource?.StartActivity($"Get{modelType.Name.TrimEnd('?')}Value");
                         if(rootNode == null)
@@ -299,7 +303,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 {
                     if(typeof(ModelType) != typeof(Stream))
                     {
-                        await DrainAsync(response);
+                        await DrainAsync(response, cancellationToken);
                     }
                 }
             }
@@ -326,11 +330,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 try
                 {
-                    await ThrowIfFailedResponse(response, errorMapping, span);
+                    await ThrowIfFailedResponse(response, errorMapping, span, cancellationToken);
                 }
                 finally
                 {
-                    await DrainAsync(response);
+                    await DrainAsync(response, cancellationToken);
                 }
             }
             else
@@ -339,23 +343,27 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 await responseHandler.HandleResponseAsync<HttpResponseMessage, object>(response, errorMapping);
             }
         }
-        private void SetResponseType(object? result, Activity? activity)
+        private static void SetResponseType(object? result, Activity? activity)
         {
             if(result != null)
             {
                 activity?.SetTag("com.microsoft.kiota.response.type", result.GetType().FullName);
             }
         }
-        private async Task DrainAsync(HttpResponseMessage response)
+        private static async Task DrainAsync(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             if(response.Content != null)
             {
+#if NET5_0_OR_GREATER
+                using var discard = await response.Content.ReadAsStreamAsync(cancellationToken);
+#else
                 using var discard = await response.Content.ReadAsStreamAsync();
+#endif
                 response.Content.Dispose();
             }
             response.Dispose();
         }
-        private bool shouldReturnNull(HttpResponseMessage response)
+        private static bool shouldReturnNull(HttpResponseMessage response)
         {
             return response.StatusCode == HttpStatusCode.NoContent
                    || response.Content == null
@@ -371,7 +379,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// The attribute name used to indicate whether the error response contained a body.
         /// </summary>
         public const string ErrorBodyFoundAttributeName = "com.microsoft.kiota.error.body_found";
-        private async Task ThrowIfFailedResponse(HttpResponseMessage response, Dictionary<string, ParsableFactory<IParsable>>? errorMapping, Activity? activityForAttributes)
+        private async Task ThrowIfFailedResponse(HttpResponseMessage response, Dictionary<string, ParsableFactory<IParsable>>? errorMapping, Activity? activityForAttributes, CancellationToken cancellationToken)
         {
             using var span = activitySource?.StartActivity(nameof(ThrowIfFailedResponse));
             if(response.IsSuccessStatusCode) return;
@@ -396,7 +404,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             }
             activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, true);
 
-            var rootNode = await GetRootParseNode(response);
+            var rootNode = await GetRootParseNode(response, cancellationToken);
             activityForAttributes?.SetTag(ErrorBodyFoundAttributeName, rootNode != null);
             var spanForDeserialization = activitySource?.StartActivity(nameof(IParseNode.GetObjectValue));
             var result = rootNode?.GetObjectValue(errorFactory);
@@ -420,13 +428,17 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         {
             return requestInfo.GetRequestOption<ResponseHandlerOption>()?.ResponseHandler;
         }
-        private async Task<IParseNode?> GetRootParseNode(HttpResponseMessage response)
+        private async Task<IParseNode?> GetRootParseNode(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             using var span = activitySource?.StartActivity(nameof(GetRootParseNode));
             var responseContentType = response.Content?.Headers?.ContentType?.MediaType?.ToLowerInvariant();
             if(string.IsNullOrEmpty(responseContentType))
                 return null;
+#if NET5_0_OR_GREATER
+            using var contentStream = await (response.Content?.ReadAsStreamAsync(cancellationToken) ?? Task.FromResult(Stream.Null));
+#else
             using var contentStream = await (response.Content?.ReadAsStreamAsync() ?? Task.FromResult(Stream.Null));
+#endif
             if(contentStream == Stream.Null || (contentStream.CanSeek && contentStream.Length == 0))
                 return null;// ensure a usefule stream is passed to the factory
             var rootNode = pNodeFactory.GetRootParseNode(responseContentType!, contentStream);
@@ -494,7 +506,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 span?.AddEvent(new ActivityEvent(AuthenticateChallengedEventKey));
                 activityForAttributes?.SetTag("http.retry_count", 1);
                 requestInfo.Content?.Seek(0, SeekOrigin.Begin);
-                await DrainAsync(response);
+                await DrainAsync(response, cancellationToken);
                 return await GetHttpResponseMessage(requestInfo, cancellationToken, activityForAttributes, responseClaims);
             }
             return response;
