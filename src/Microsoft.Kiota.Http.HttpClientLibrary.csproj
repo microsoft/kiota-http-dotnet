@@ -6,7 +6,7 @@
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <AssemblyTitle>Kiota Http Library for dotnet</AssemblyTitle>
     <Authors>Microsoft</Authors>
-    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;netstandard2.1;net5.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
@@ -14,7 +14,7 @@
     <PackageProjectUrl>https://aka.ms/kiota/docs</PackageProjectUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Deterministic>true</Deterministic>
-    <VersionPrefix>1.1.1</VersionPrefix>
+    <VersionPrefix>1.2.0</VersionPrefix>
     <VersionSuffix></VersionSuffix>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <!-- Enable this line once we go live to prevent breaking changes -->
@@ -33,12 +33,13 @@
     <Nullable>enable</Nullable>
     <IsTrimmable>true</IsTrimmable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <NoWarn>$(NoWarn);NU5048</NoWarn>
+    <NoWarn>$(NoWarn);NU5048;NETSDK1138</NoWarn>
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.5.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[6.0,8.0)" />
     <PackageReference Include="System.Text.Json" Version="[6.0,8.0)" />
     <ProjectReference Include="..\Kiota.Generated\KiotaGenerated.csproj" OutputItemType="Analyzer"

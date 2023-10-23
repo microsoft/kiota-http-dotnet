@@ -55,27 +55,33 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             var retryOption = request.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
             ActivitySource? activitySource;
             Activity? activity;
-            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+            {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.retry.enable", true);
-            } else {
+            }
+            else
+            {
                 activity = null;
                 activitySource = null;
             }
 
-            try {
+            try
+            {
 
-                var response = await base.SendAsync(request, cancellationToken);
+                var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
                 // Check whether retries are permitted and that the MaxRetry value is a non - negative, non - zero value
                 if(request.IsBuffered() && retryOption.MaxRetry > 0 && (ShouldRetry(response.StatusCode) || retryOption.ShouldRetry(retryOption.Delay, 0, response)))
                 {
-                    response = await SendRetryAsync(response, retryOption, cancellationToken, activitySource);
+                    response = await SendRetryAsync(response, retryOption, cancellationToken, activitySource).ConfigureAwait(false);
                 }
 
                 return response;
-            } finally {
+            }
+            finally
+            {
                 activity?.Dispose();
                 activitySource?.Dispose();
             }
@@ -89,7 +95,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> for the retry.</param>
         /// <param name="activitySource">The <see cref="ActivitySource"/> for the retry.</param>
         /// <returns></returns>
-        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response,RetryHandlerOption retryOption, CancellationToken cancellationToken, ActivitySource? activitySource)
+        private async Task<HttpResponseMessage> SendRetryAsync(HttpResponseMessage response, RetryHandlerOption retryOption, CancellationToken cancellationToken, ActivitySource? activitySource)
         {
             int retryCount = 0;
             TimeSpan cumulativeDelay = TimeSpan.Zero;
@@ -103,11 +109,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 // before retry attempt and before the TooManyRetries ServiceException.
                 if(response.Content != null)
                 {
-                    await response.Content.ReadAsByteArrayAsync();
+#if NET5_0_OR_GREATER
+                    await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+#else
+                    await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+#endif
                 }
 
                 // Call Delay method to get delay time from response's Retry-After header or by exponential backoff
-                Task delay = Delay(response, retryCount, retryOption.Delay, out double delayInSeconds, cancellationToken);
+                Task delay = RetryHandler.Delay(response, retryCount, retryOption.Delay, out double delayInSeconds, cancellationToken);
 
                 // If client specified a retries time limit, let's honor it
                 if(retryOption.RetriesTimeLimit > TimeSpan.Zero)
@@ -128,7 +138,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 {
                     return response;// We can't clone the original request to replay it.
                 }
-                var request = await originalRequest.CloneAsync();
+                var request = await originalRequest.CloneAsync(cancellationToken).ConfigureAwait(false);
 
                 // Increase retryCount and then update Retry-Attempt in request header
                 retryCount++;
@@ -138,7 +148,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 await delay;
 
                 // Call base.SendAsync to send the request
-                response = await base.SendAsync(request, cancellationToken);
+                response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
                 if(!(request.IsBuffered() && (ShouldRetry(response.StatusCode) || retryOption.ShouldRetry(retryOption.Delay, retryCount, response))))
                 {
@@ -150,7 +160,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             // before retry attempt and before the TooManyRetries ServiceException.
             if(response.Content != null)
             {
-                await response.Content.ReadAsByteArrayAsync();
+#if NET5_0_OR_GREATER
+                await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+#else
+                await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+#endif
             }
 
             throw new InvalidOperationException(
@@ -181,14 +195,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <param name="delayInSeconds"></param>
         /// <param name="cancellationToken">The cancellationToken for the Http request</param>
         /// <returns>The <see cref="Task"/> for delay operation.</returns>
-        internal Task Delay(HttpResponseMessage response, int retryCount, int delay, out double delayInSeconds, CancellationToken cancellationToken)
+        internal static Task Delay(HttpResponseMessage response, int retryCount, int delay, out double delayInSeconds, CancellationToken cancellationToken)
         {
             delayInSeconds = delay;
             if(response.Headers.TryGetValues(RetryAfter, out IEnumerable<string>? values))
             {
                 string retryAfter = values.First();
                 // the delay could be in the form of a seconds or a http date. See https://httpwg.org/specs/rfc7231.html#header.retry-after
-                if(Int32.TryParse(retryAfter, out int delaySeconds))
+                if(int.TryParse(retryAfter, out int delaySeconds))
                 {
                     delayInSeconds = delaySeconds;
                 }
@@ -196,7 +210,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 {
                     var timeSpan = dateTime - DateTime.Now;
                     // ensure the delay is a positive span otherwise use the exponential back-off
-                    delayInSeconds = timeSpan.Seconds > 0 ? timeSpan.Seconds: CalculateExponentialDelay(retryCount, delay);
+                    delayInSeconds = timeSpan.Seconds > 0 ? timeSpan.Seconds : CalculateExponentialDelay(retryCount, delay);
                 }
             }
             else
@@ -205,7 +219,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             }
 
             TimeSpan delayTimeSpan = TimeSpan.FromSeconds(Math.Min(delayInSeconds, RetryHandlerOption.MaxDelay));
-            delayInSeconds=delayTimeSpan.TotalSeconds;
+            delayInSeconds = delayTimeSpan.TotalSeconds;
             return Task.Delay(delayTimeSpan, cancellationToken);
         }
 

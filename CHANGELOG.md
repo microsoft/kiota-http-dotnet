@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2023-10-23
+
+### Added
+
+- Added support for dotnet trimming.
+
 ## [1.1.1] - 2023-08-28
 
 - Fixes a bug where the `ParametersNameDecodingHandler` would also decode query parameter values.

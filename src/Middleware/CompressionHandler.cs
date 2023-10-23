@@ -33,16 +33,20 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             ActivitySource? activitySource;
             Activity? activity;
-            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+            {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(CompressionHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.compression.enable", true);
-            } else {
+            }
+            else
+            {
                 activity = null;
                 activitySource = null;
             }
 
-            try {
+            try
+            {
 
                 StringWithQualityHeaderValue gzipQHeaderValue = new StringWithQualityHeaderValue(GZip);
 
@@ -57,7 +61,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 // Decompress response content when Content-Encoding: gzip header is present.
                 if(ShouldDecompressContent(response))
                 {
-                    StreamContent streamContent = new StreamContent(new GZipStream(await response.Content.ReadAsStreamAsync(), CompressionMode.Decompress));
+#if NET5_0_OR_GREATER
+                    StreamContent streamContent = new StreamContent(new GZipStream(await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false), CompressionMode.Decompress));
+#else
+                    StreamContent streamContent = new StreamContent(new GZipStream(await response.Content.ReadAsStreamAsync().ConfigureAwait(false), CompressionMode.Decompress));
+#endif
                     // Copy Content Headers to the destination stream content
                     foreach(var httpContentHeader in response.Content.Headers)
                     {
@@ -67,7 +75,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 }
 
                 return response;
-            } finally {
+            }
+            finally
+            {
                 activity?.Dispose();
                 activitySource?.Dispose();
             }

@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Kiota.Http.HttpClientLibrary.Extensions;
@@ -57,15 +58,19 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             var chaosHandlerOptions = request.GetRequestOption<ChaosHandlerOption>() ?? _chaosHandlerOptions;
             ActivitySource? activitySource;
             Activity? activity;
-            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
+            if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+            {
                 activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(ChaosHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.chaos.enable", true);
-            } else {
+            }
+            else
+            {
                 activity = null;
                 activitySource = null;
             }
-            try {
+            try
+            {
 
                 // Planned Chaos or Random?
                 if(chaosHandlerOptions.PlannedChaosFactory != null && chaosHandlerOptions.PlannedChaosFactory(request) is HttpResponseMessage plannedResponse)
@@ -86,7 +91,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
                 return await base.SendAsync(request, cancellationToken);
             }
-            finally {
+            finally
+            {
                 activity?.Dispose();
                 activitySource?.Dispose();
             }
@@ -122,14 +128,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <returns>A <see cref="HttpResponseMessage"/> object simulating a 429 response</returns>
         public static HttpResponseMessage Create429TooManyRequestsResponse(TimeSpan retry)
         {
-            var contentString = JsonSerializer.Serialize(new
+            var contentString = JsonSerializer.Serialize(new MainError
             {
                 error = new Error
                 {
                     Code = "activityLimitReached",
-                    Message ="Client application has been throttled and should not attempt to repeat the request until an amount of time has elapsed."
+                    Message = "Client application has been throttled and should not attempt to repeat the request until an amount of time has elapsed."
                 }
+#if NET5_0_OR_GREATER
+            }, SourceGenerationContext.Default.MainError);
+#else
             });
+#endif
             var throttleResponse = new HttpResponseMessage
             {
                 StatusCode = (HttpStatusCode)429,
@@ -146,14 +156,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <returns>A <see cref="HttpResponseMessage"/> object simulating a 503 response</returns>
         public static HttpResponseMessage Create503Response(TimeSpan retry)
         {
-            var contentString = JsonSerializer.Serialize(new
+            var contentString = JsonSerializer.Serialize(new MainError
             {
                 error = new Error
                 {
                     Code = "serviceNotAvailable",
                     Message = "The service is temporarily unavailable for maintenance or is overloaded. You may repeat the request after a delay, the length of which may be specified in a Retry-After header."
                 }
+#if NET5_0_OR_GREATER
+            }, SourceGenerationContext.Default.MainError);
+#else
             });
+#endif
             var serverUnavailableResponse = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.ServiceUnavailable,
@@ -169,13 +183,17 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <returns>A <see cref="HttpResponseMessage"/> object simulating a 502 Response</returns>
         public static HttpResponseMessage Create502BadGatewayResponse()
         {
-            var contentString = JsonSerializer.Serialize(new
+            var contentString = JsonSerializer.Serialize(new MainError
             {
                 error = new Error
                 {
                     Code = "502"
                 }
+#if NET5_0_OR_GREATER
+            }, SourceGenerationContext.Default.MainError);
+#else
             });
+#endif
             var badGatewayResponse = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.BadGateway,
@@ -190,14 +208,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <returns>A <see cref="HttpResponseMessage"/> object simulating a 500 Response</returns>
         public static HttpResponseMessage Create500InternalServerErrorResponse()
         {
-            var contentString = JsonSerializer.Serialize(new
+            var contentString = JsonSerializer.Serialize(new MainError
             {
                 error = new Error
                 {
                     Code = "generalException",
                     Message = "There was an internal server error while processing the request."
                 }
+#if NET5_0_OR_GREATER
+            }, SourceGenerationContext.Default.MainError);
+#else
             });
+#endif
             var internalServerError = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.InternalServerError,
@@ -213,14 +235,18 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         /// <returns>A <see cref="HttpResponseMessage"/> object simulating a 504 response</returns>
         public static HttpResponseMessage Create504GatewayTimeoutResponse(TimeSpan retry)
         {
-            var contentString = JsonSerializer.Serialize(new
+            var contentString = JsonSerializer.Serialize(new MainError
             {
                 error = new Error
                 {
                     Code = "504",
                     Message = "The server, while acting as a proxy, did not receive a timely response from the upstream server it needed to access in attempting to complete the request. May occur together with 503."
                 }
+#if NET5_0_OR_GREATER
+            }, SourceGenerationContext.Default.MainError);
+#else
             });
+#endif
             var gatewayTimeoutResponse = new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.GatewayTimeout,
@@ -244,21 +270,39 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             base.Dispose();
             GC.SuppressFinalize(this);
         }
+    }
+    internal partial class MainError
+    {
+        public Error error
+        {
+            get; set;
+        } = new();
+    }
+    /// <summary>
+    /// Private class to model sample responses
+    /// </summary>
+    internal partial class Error
+    {
+        /// <summary>
+        /// The error code
+        /// </summary>
+        public string? Code
+        {
+            get; set;
+        }
 
         /// <summary>
-        /// Private class to model sample responses
+        /// The error message
         /// </summary>
-        private sealed class Error
+        public string? Message
         {
-            /// <summary>
-            /// The error code
-            /// </summary>
-            public string? Code { get; set; }
-
-            /// <summary>
-            /// The error message
-            /// </summary>
-            public string? Message { get; set; }
+            get; set;
         }
     }
+#if NET5_0_OR_GREATER
+        [JsonSerializable(typeof(MainError))]
+        internal partial class SourceGenerationContext : JsonSerializerContext
+        {
+        }
+#endif
 }
