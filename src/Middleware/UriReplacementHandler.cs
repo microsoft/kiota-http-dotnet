@@ -32,9 +32,9 @@ public interface IUriReplacementHandlerOption : IRequestOption
 /// </summary>
 public class UriReplacementHandlerOption : IUriReplacementHandlerOption
 {
-    private readonly bool isEnabled = false;
+    private readonly bool isEnabled;
 
-    private readonly IEnumerable<KeyValuePair<string, string>> replacementPairs = new Dictionary<string, string>();
+    private readonly IEnumerable<KeyValuePair<string, string>> replacementPairs;
 
     /// <summary>
     /// Creates a new instance of UriReplacementOption.
@@ -45,7 +45,6 @@ public class UriReplacementHandlerOption : IUriReplacementHandlerOption
     {
         this.isEnabled = isEnabled;
         this.replacementPairs = replacementPairs;
-
     }
 
     /// <inheritdoc/>
@@ -59,7 +58,7 @@ public class UriReplacementHandlerOption : IUriReplacementHandlerOption
     {
         if(original is null) return null;
 
-        if(!isEnabled)
+        if(!IsEnabled())
         {
             return original;
         }
