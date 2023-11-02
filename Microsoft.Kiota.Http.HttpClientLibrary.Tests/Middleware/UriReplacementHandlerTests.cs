@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Moq;
 using Xunit;
 
@@ -15,6 +16,7 @@ public class UriReplacementOptionTests {
         var uri = new Uri("http://localhost/test");
         var disabled = new UriReplacementHandlerOption(false, new Dictionary<string, string>());
 
+        Assert.False(disabled.IsEnabled());
         Assert.Equal(uri, disabled.Replace(uri));
 
         disabled = new UriReplacementHandlerOption(false, new Dictionary<string, string>{
@@ -29,6 +31,7 @@ public class UriReplacementOptionTests {
     {
         var disabled = new UriReplacementHandlerOption(false, new Dictionary<string, string>());
 
+        Assert.False(disabled.IsEnabled());
         Assert.Null(disabled.Replace(null));
     }
 
@@ -36,9 +39,10 @@ public class UriReplacementOptionTests {
     public void Replaces_Key_In_Path_With_Value()
     {
         var uri = new Uri("http://localhost/test");
-        var disabled = new UriReplacementHandlerOption(true, new Dictionary<string, string>{{"test", ""}});
+        var option = new UriReplacementHandlerOption(true, new Dictionary<string, string>{{"test", ""}});
 
-        Assert.Equal("http://localhost/", disabled.Replace(uri)!.ToString());
+        Assert.True(option.IsEnabled());
+        Assert.Equal("http://localhost/", option.Replace(uri)!.ToString());
     }
 }
 
