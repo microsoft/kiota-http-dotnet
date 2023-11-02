@@ -44,10 +44,7 @@ public class UriReplacementHandler<TUriReplacementHandlerOption> : DelegatingHan
 
         try
         {
-            var uriReplacementHandlerOption = request.GetRequestOption<IUriReplacementHandlerOption>() ?? uriReplacement;
-            if (uriReplacement.IsEnabled()) {
-                request.RequestUri = uriReplacementHandlerOption.Replace(request.RequestUri);
-            }
+            request.RequestUri = uriReplacement.Replace(request.RequestUri);
             return await base.SendAsync(request, cancellationToken);
         }
         finally
