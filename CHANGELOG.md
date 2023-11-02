@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2023-11-02
+
+### Added
+
+- Added uri replacement handler.
+
 ## [1.2.0] - 2023-10-23
 
 ### Added
