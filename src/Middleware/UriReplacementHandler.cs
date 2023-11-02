@@ -11,7 +11,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 /// Replaces a portion of the URL.
 /// </summary>
 /// <typeparam name="TUriReplacementHandlerOption">A type with the rules used to perform a URI replacement.</typeparam>
-public class UriReplacementHandler<TUriReplacementHandlerOption> : DelegatingHandler where TUriReplacementHandlerOption : IUriReplacementHandlerOption, IRequestOption
+public class UriReplacementHandler<TUriReplacementHandlerOption> : DelegatingHandler where TUriReplacementHandlerOption : IUriReplacementHandlerOption
 {
     private readonly TUriReplacementHandlerOption uriReplacement;
 
