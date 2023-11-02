@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -161,7 +161,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             redirectResponse.Headers.Location = new Uri("http://example.org/bar");
             this._testHttpMessageHandler.SetHttpResponse(redirectResponse, new HttpResponseMessage(HttpStatusCode.OK));// sets the mock response
             // Act
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await this._invoker.SendAsync(httpRequestMessage, CancellationToken.None));
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => this._invoker.SendAsync(httpRequestMessage, CancellationToken.None));
             // Assert
             Assert.Contains("Redirects with changing schemes not allowed by default", exception.Message);
             Assert.Equal("Scheme changed from https to http.", exception.InnerException?.Message);
@@ -233,7 +233,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             response2.Headers.Location = new Uri("http://example.org/foo");
             this._testHttpMessageHandler.SetHttpResponse(response1, response2);// sets the mock response
             // Act
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await this._invoker.SendAsync(
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => this._invoker.SendAsync(
                    httpRequestMessage, CancellationToken.None));
             // Assert
             Assert.Equal("Too many redirects performed", exception.Message);
