@@ -25,6 +25,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware.Registries
 
             // They are the same instance
             Assert.Equal(activitySource, activitySource2);
+            Assert.Equal("sample source", activitySource.Name);
+            Assert.Equal("sample source", activitySource2.Name);
         }
 
         [Fact]
@@ -33,9 +35,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware.Registries
             // Act
             var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource("sample source");
             Assert.NotNull(activitySource);
+            Assert.Equal("sample source", activitySource.Name);
 
             var activitySource2 = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource("sample source 2");
             Assert.NotNull(activitySource);
+            Assert.Equal("sample source 2", activitySource2.Name);
 
             // They are not the same instance
             Assert.NotEqual(activitySource, activitySource2);
