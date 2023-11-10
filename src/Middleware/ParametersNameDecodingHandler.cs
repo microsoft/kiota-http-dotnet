@@ -3,7 +3,6 @@
 // ------------------------------------------------------------------------------
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -35,15 +34,13 @@ public class ParametersNameDecodingHandler: DelegatingHandler
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var options = request.GetRequestOption<ParametersNameDecodingOption>() ?? EncodingOptions;
-        ActivitySource? activitySource;
         Activity? activity;
-        if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
-            activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+        if (request.GetRequestOption<ObservabilityOptions>() is { } obsOptions) {
+            var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
             activity = activitySource.StartActivity($"{nameof(ParametersNameDecodingHandler)}_{nameof(SendAsync)}");
             activity?.SetTag("com.microsoft.kiota.handler.parameters_name_decoding.enable", true);
         } else {
             activity = null;
-            activitySource = null;
         }
         try {
             if(!request.RequestUri!.Query.Contains('%') ||
@@ -60,7 +57,6 @@ public class ParametersNameDecodingHandler: DelegatingHandler
             return base.SendAsync(request, cancellationToken);
         } finally {
             activity?.Dispose();
-            activitySource?.Dispose();
         }
     }
     internal static string? DecodeUriEncodedString(string? original, char[] charactersToDecode) {

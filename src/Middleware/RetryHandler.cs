@@ -55,9 +55,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             var retryOption = request.GetRequestOption<RetryHandlerOption>() ?? RetryOption;
             ActivitySource? activitySource;
             Activity? activity;
-            if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+            if(request.GetRequestOption<ObservabilityOptions>() is { } obsOptions)
             {
-                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.retry.enable", true);
             }
@@ -83,7 +83,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             finally
             {
                 activity?.Dispose();
-                activitySource?.Dispose();
             }
         }
 

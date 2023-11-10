@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Extensions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 
@@ -28,18 +27,16 @@ public class UriReplacementHandler<TUriReplacementHandlerOption> : DelegatingHan
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
     {
-        ActivitySource? activitySource;
         Activity? activity;
-        if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+        if(request.GetRequestOption<ObservabilityOptions>() is { } obsOptions)
         {
-            activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+            var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
             activity = activitySource.StartActivity($"{nameof(UriReplacementHandler<TUriReplacementHandlerOption>)}_{nameof(SendAsync)}");
             activity?.SetTag("com.microsoft.kiota.handler.uri_replacement.enable", uriReplacement.IsEnabled());
         }
         else
         {
             activity = null;
-            activitySource = null;
         }
 
         try
@@ -50,7 +47,6 @@ public class UriReplacementHandler<TUriReplacementHandlerOption> : DelegatingHan
         finally
         {
             activity?.Dispose();
-            activitySource?.Dispose();
         }
     }
 }

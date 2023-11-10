@@ -31,18 +31,16 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            ActivitySource? activitySource;
             Activity? activity;
-            if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+            if(request.GetRequestOption<ObservabilityOptions>() is { } obsOptions)
             {
-                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(CompressionHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.compression.enable", true);
             }
             else
             {
                 activity = null;
-                activitySource = null;
             }
 
             try
@@ -79,7 +77,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             finally
             {
                 activity?.Dispose();
-                activitySource?.Dispose();
             }
         }
 

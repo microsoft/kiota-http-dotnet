@@ -30,15 +30,13 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(request == null)
                 throw new ArgumentNullException(nameof(request));
 
-            ActivitySource? activitySource;
             Activity? activity;
-            if (request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions) {
-                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+            if (request.GetRequestOption<ObservabilityOptions>() is { } obsOptions) {
+                var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(UserAgentHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.useragent.enable", true);
             } else {
                 activity = null;
-                activitySource = null;
             }
             try {
                 var userAgentHandlerOption = request.GetRequestOption<UserAgentHandlerOption>() ?? _userAgentOption;
@@ -51,7 +49,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 return base.SendAsync(request, cancellationToken);
             } finally {
                 activity?.Dispose();
-                activitySource?.Dispose();
             }
         }
     }
