@@ -56,18 +56,16 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             // Select global or per request options
             var chaosHandlerOptions = request.GetRequestOption<ChaosHandlerOption>() ?? _chaosHandlerOptions;
-            ActivitySource? activitySource;
             Activity? activity;
-            if(request.GetRequestOption<ObservabilityOptions>() is ObservabilityOptions obsOptions)
+            if(request.GetRequestOption<ObservabilityOptions>() is { } obsOptions)
             {
-                activitySource = new ActivitySource(obsOptions.TracerInstrumentationName);
+                var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(ChaosHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.chaos.enable", true);
             }
             else
             {
                 activity = null;
-                activitySource = null;
             }
             try
             {
@@ -94,7 +92,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             finally
             {
                 activity?.Dispose();
-                activitySource?.Dispose();
             }
         }
 

@@ -65,7 +65,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             }
             if(finalHandler != null)
                 handlers[handlers.Length-1].InnerHandler = finalHandler;
-            return handlers.First();
+            return handlers[0];//first
         }
         /// <summary>
         /// Creates a <see cref="DelegatingHandler"/> to use for the <see cref="HttpClient" /> from the provided <see cref="DelegatingHandler"/> instances. Order matters.

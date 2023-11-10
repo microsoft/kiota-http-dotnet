@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2023-11-10
+
+### Added
+
+- Fixes multiple initialization of `ActivitySource` instances on each request send(https://github.com/microsoft/kiota-http-dotnet/issues/161).
+
 ## [1.3.0] - 2023-11-02
 
 ### Added
