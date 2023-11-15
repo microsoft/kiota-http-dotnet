@@ -30,9 +30,9 @@ stages:
       steps:
 
       - task: UseDotNet@2
-        displayName: 'Use .NET 7'
+        displayName: 'Use .NET 8'
         inputs:
-          version: 7.x
+          version: 8.x
 
       - task: UseDotNet@2
         displayName: 'Use .NET 6 (for code signing tasks)'
@@ -90,7 +90,7 @@ stages:
         inputs:
           command: test
           projects: '$(Build.SourcesDirectory)\Microsoft.Kiota.Http.HttpClientLibrary.sln'
-          arguments: '--configuration $(BuildConfiguration) --no-build -f net7.0'
+          arguments: '--configuration $(BuildConfiguration) --no-build -f net8.0'
 
       # CredScan
       - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
