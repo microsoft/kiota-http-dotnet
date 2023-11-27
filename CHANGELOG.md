@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2023-11-28
+
+### Added
+
+- Fixes a bug with internal `CloneAsync` method when using stream content types.
+
 ## [1.3.2] - 2023-11-15
 
 ### Added

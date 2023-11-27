@@ -70,10 +70,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Extensions
             if(originalRequest.Content != null)
             {
                 // HttpClient doesn't rewind streams and we have to explicitly do so.
+                var contentStream = new MemoryStream();
 #if NET5_0_OR_GREATER
-                var contentStream = await originalRequest.Content.ReadAsStreamAsync(cancellationToken);
+                await originalRequest.Content.CopyToAsync(contentStream, cancellationToken);
 #else
-                var contentStream = await originalRequest.Content.ReadAsStreamAsync();
+                await originalRequest.Content.CopyToAsync(contentStream);
 #endif
 
                 if(contentStream.CanSeek)
