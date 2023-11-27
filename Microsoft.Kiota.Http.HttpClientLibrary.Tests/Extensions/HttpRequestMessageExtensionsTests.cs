@@ -67,17 +67,39 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Extensions
                 HttpMethod = Method.GET,
                 URI = new Uri("http://localhost")
             };
-            requestInfo.SetStreamContent(new MemoryStream(Encoding.UTF8.GetBytes("contents")), "application/octet-stream");
             var originalRequest = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
             originalRequest.Content = new StringContent("contents");
 
             var clonedRequest = await originalRequest.CloneAsync();
+            var originalContents = await originalRequest.Content.ReadAsStringAsync();
             var clonedRequestContents = await clonedRequest.Content?.ReadAsStringAsync();
 
             Assert.NotNull(clonedRequest);
             Assert.Equal(originalRequest.Method, clonedRequest.Method);
             Assert.Equal(originalRequest.RequestUri, clonedRequest.RequestUri);
-            Assert.Equal("contents", clonedRequestContents);
+            Assert.Equal(originalContents, clonedRequestContents);
+            Assert.Equal(originalRequest.Content?.Headers.ContentType, clonedRequest.Content?.Headers.ContentType);
+        }
+
+        [Fact]
+        public async Task CloneAsyncWithHttpStreamContent()
+        {
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri("http://localhost")
+            };
+            requestInfo.SetStreamContent(new MemoryStream(Encoding.UTF8.GetBytes("contents")), "application/octet-stream");
+            var originalRequest = await requestAdapter.ConvertToNativeRequestAsync<HttpRequestMessage>(requestInfo);
+
+            var clonedRequest = await originalRequest.CloneAsync();
+            var originalContents = await originalRequest.Content.ReadAsStringAsync();
+            var clonedRequestContents = await clonedRequest.Content?.ReadAsStringAsync();
+
+            Assert.NotNull(clonedRequest);
+            Assert.Equal(originalRequest.Method, clonedRequest.Method);
+            Assert.Equal(originalRequest.RequestUri, clonedRequest.RequestUri);
+            Assert.Equal(originalContents, clonedRequestContents);
             Assert.Equal(originalRequest.Content?.Headers.ContentType, clonedRequest.Content?.Headers.ContentType);
         }
 
