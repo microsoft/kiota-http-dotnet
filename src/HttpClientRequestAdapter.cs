@@ -52,7 +52,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             pNodeFactory = parseNodeFactory ?? ParseNodeFactoryRegistry.DefaultInstance;
             sWriterFactory = serializationWriterFactory ?? SerializationWriterFactoryRegistry.DefaultInstance;
             obsOptions = observabilityOptions ?? new ObservabilityOptions();
-            activitySource = new(obsOptions.TracerInstrumentationName);
+            activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
         }
         /// <summary>Factory to use to get a serializer for payload serialization</summary>
         public ISerializationWriterFactory SerializationWriterFactory
@@ -603,7 +603,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             // Cleanup
             if(createdClient)
             {
-                activitySource?.Dispose();
                 client?.Dispose();
             }
         }
