@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.4] - 2023-12-29
+
+### Added
+
+- Fixes `ActicitySource` memory leak when the HttpClientRequestAdapter does not construct the HttpClient internally.
+
 ## [1.3.3] - 2023-11-28
 
 ### Added
