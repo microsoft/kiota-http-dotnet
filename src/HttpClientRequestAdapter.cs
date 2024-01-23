@@ -70,7 +70,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             get => baseUrl;
             set => this.baseUrl = value?.TrimEnd('/');
         }
-        private static readonly char[] charactersToDecodeForUriTemplate = new char[] { '$', '.', '-', '~' };
+        private static readonly char[] charactersToDecodeForUriTemplate = ['$', '.', '-', '~'];
         private static readonly Regex queryParametersCleanupRegex = new(@"\{\?[^\}]+}", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromMilliseconds(100));
         private Activity? startTracingSpan(RequestInformation requestInfo, string methodName)
         {
@@ -393,7 +393,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             if(errorMapping == null ||
                 !errorMapping.TryGetValue(statusCodeAsString, out errorFactory) &&
                 !(statusCodeAsInt >= 400 && statusCodeAsInt < 500 && errorMapping.TryGetValue("4XX", out errorFactory)) &&
-                !(statusCodeAsInt >= 500 && statusCodeAsInt < 600 && errorMapping.TryGetValue("5XX", out errorFactory)))
+                !(statusCodeAsInt >= 500 && statusCodeAsInt < 600 && errorMapping.TryGetValue("5XX", out errorFactory)) &&
+                !errorMapping.TryGetValue("XXX", out errorFactory))
             {
                 activityForAttributes?.SetTag(ErrorMappingFoundAttributeName, false);
                 throw new ApiException($"The server returned an unexpected status code and no error factory is registered for this code: {statusCodeAsString}")
