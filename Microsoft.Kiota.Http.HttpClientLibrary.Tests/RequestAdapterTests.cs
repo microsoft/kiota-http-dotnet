@@ -446,5 +446,94 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                 Assert.True(e.ResponseHeaders.ContainsKey("request-id"));
             }
         }
+        [InlineData(HttpStatusCode.NotFound)]// 4XX
+        [InlineData(HttpStatusCode.BadGateway)]// 5XX
+        [Theory]
+        public async void SelectsTheXXXErrorMappingClassCorrectly(HttpStatusCode statusCode)
+        {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                var responseMessage = new HttpResponseMessage
+                {
+                    StatusCode = statusCode,
+                    Content = new StringContent("{}",Encoding.UTF8,"application/json")
+                };
+                return responseMessage;
+            });
+            var mockParseNode = new Mock<IParseNode>();
+            mockParseNode.Setup<IParsable>(x => x.GetObjectValue(It.IsAny<ParsableFactory<IParsable>>()))
+            .Returns(new MockError("A general error occured"));
+            var mockParseNodeFactory = new Mock<IParseNodeFactory>();
+            mockParseNodeFactory.Setup<IParseNode>(x => x.GetRootParseNode(It.IsAny<string>(), It.IsAny<Stream>()))
+                .Returns(mockParseNode.Object);
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+            try
+            {
+                var errorMapping = new Dictionary<string, ParsableFactory<IParsable>>()
+                {
+                    { "XXX", (parseNode) => new MockError("A general error occured")},
+                };
+                var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo, errorMapping);
+                Assert.Fail("Expected an ApiException to be thrown");
+            }
+            catch(MockError mockError)
+            {
+                Assert.Equal((int)statusCode, mockError.ResponseStatusCode);
+                Assert.Equal("A general error occured", mockError.Message);
+            }
+        }
+        [InlineData(HttpStatusCode.BadGateway)]// 5XX
+        [Theory]
+        public async void ThrowsApiExceptionOnMissingMapping(HttpStatusCode statusCode)
+        {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                var responseMessage = new HttpResponseMessage
+                {
+                    StatusCode = statusCode,
+                    Content = new StringContent("{}", Encoding.UTF8, "application/json")
+                };
+                return responseMessage;
+            });
+            var mockParseNode = new Mock<IParseNode>();
+            mockParseNode.Setup<IParsable>(x => x.GetObjectValue(It.IsAny<ParsableFactory<IParsable>>()))
+            .Returns(new MockError("A general error occured: "+ statusCode.ToString()));
+            var mockParseNodeFactory = new Mock<IParseNodeFactory>();
+            mockParseNodeFactory.Setup<IParseNode>(x => x.GetRootParseNode(It.IsAny<string>(), It.IsAny<Stream>()))
+                .Returns(mockParseNode.Object);
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                UrlTemplate = "https://example.com"
+            };
+            try
+            {
+                var errorMapping = new Dictionary<string, ParsableFactory<IParsable>>()
+                {
+                    { "4XX", (parseNode) => new MockError("A 4XX error occured") }//Only 4XX
+                };
+                var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo, errorMapping);
+                Assert.Fail("Expected an ApiException to be thrown");
+            }
+            catch(ApiException apiException)
+            {
+                Assert.Equal((int)statusCode, apiException.ResponseStatusCode);
+                Assert.Contains("The server returned an unexpected status code and no error factory is registered for this code", apiException.Message);
+            }
+        }
     }
 }

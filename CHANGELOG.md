@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.5] - 2023-01-23
+
+### Added
+
+- Adds support for `XXX` status code error mapping to HttpClientRequestAdapter.
+
 ## [1.3.4] - 2023-12-29
 
 ### Added
