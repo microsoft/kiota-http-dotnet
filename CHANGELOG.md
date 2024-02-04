@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.6] - 2023-02-05
+
+- Fixes marking .NET 5 build as trimmable.
+
 ## [1.3.5] - 2023-01-23
 
 ### Added
