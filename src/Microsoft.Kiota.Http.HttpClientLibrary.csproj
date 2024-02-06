@@ -40,7 +40,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.7.8" />
+    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.7.9" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[6.0,9.0)" />
     <PackageReference Include="System.Text.Json" Version="[6.0,9.0)" />
     <ProjectReference Include="..\Kiota.Generated\KiotaGenerated.csproj" OutputItemType="Analyzer"
