@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.7] - 2024-02-26
+
+### Changed
+
+- Added `net6.0` and `net8.0` as target frameworks.
+
 ## [1.3.6] - 2023-02-05
 
 - Fixes `IsTrimmable` property on the project.
