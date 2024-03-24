@@ -192,7 +192,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.Equal(response.RequestMessage.Content.Headers.ContentLength, -1);
         }
 
-        [Theory(Skip = "Test takes a while to run")]
+        [Theory]
         [InlineData(HttpStatusCode.GatewayTimeout)]  // 504
         [InlineData(HttpStatusCode.ServiceUnavailable)]  // 503
         [InlineData((HttpStatusCode)429)] // 429
@@ -203,16 +203,23 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             var retryResponse = new HttpResponseMessage(statusCode);
             var response2 = new HttpResponseMessage(statusCode);
             this._testHttpMessageHandler.SetHttpResponse(retryResponse, response2);
+            var retryHandler = new RetryHandler
+            {
+                InnerHandler = _testHttpMessageHandler,
+                RetryOption = new RetryHandlerOption { Delay = 1 }
+            };
+            var invoker = new HttpMessageInvoker(retryHandler);
             // Act
             try
             {
-                await _invoker.SendAsync(httpRequestMessage, new CancellationToken());
+                await invoker.SendAsync(httpRequestMessage, new CancellationToken());
             }
             catch(Exception exception)
             {
                 // Assert
-                Assert.IsType<InvalidOperationException>(exception);
-                Assert.Equal("Too many retries performed", exception.Message);
+                Assert.IsType<AggregateException>(exception);
+                var aggregateException = exception as AggregateException;
+                Assert.StartsWith("Too many retries performed.", aggregateException.Message);
                 Assert.False(httpRequestMessage.Headers.TryGetValues(RetryAttempt, out _), "Don't set Retry-Attempt Header");
             }
         }
@@ -250,7 +257,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.Equal("Init Work 1", Message);
         }
 
-        [Theory(Skip = "Skipped as this takes 9 minutes to run for each scenario")] // Takes 9 minutes to run for each scenario
+        [Theory]
         [InlineData(HttpStatusCode.GatewayTimeout)]  // 504
         [InlineData(HttpStatusCode.ServiceUnavailable)]  // 503
         [InlineData((HttpStatusCode)429)] // 429
@@ -263,7 +270,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             for(int count = 0; count < 3; count++)
             {
                 // Act
-                await DelayTestWithMessage(retryResponse, count, "Init");
+                await DelayTestWithMessage(retryResponse, count, "Init", 1);
                 // Assert
                 Assert.Equal(Message, compareMessage + count);
             }
