@@ -234,7 +234,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
         private static async Task<Exception> GetInnerException(HttpResponseMessage response, CancellationToken cancellationToken)
         {
             var httpStatusCode = response.StatusCode;
-            var errorMessage = "The response has not content.";
+            string? errorMessage = null;
 
             // Drain response content to free connections. Need to perform this
             // before retry attempt and before the TooManyRetries ServiceException.
@@ -248,7 +248,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 errorMessage = GetStringFromContent(responseContent);
             }
 
-            return new Exception($"HTTP request failed with status code: {httpStatusCode}. Error Message: {errorMessage}");
+            return new Exception($"HTTP request failed with status code: {httpStatusCode}.{errorMessage}");
         }
 
         private static string GetStringFromContent(byte[] content)
