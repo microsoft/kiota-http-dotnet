@@ -51,7 +51,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.IsType<RetryHandler>(retry);
         }
 
-
         [Fact]
         public void RetryHandlerHttpMessageHandlerConstructor()
         {
@@ -89,7 +88,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.NotNull(response.RequestMessage);
             Assert.Same(response.RequestMessage, httpRequestMessage);
             Assert.False(response.RequestMessage.Headers.Contains(RetryAttempt), "The request add header wrong.");
-
         }
 
         [Theory]
@@ -116,7 +114,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.Equal(values.First(), 1.ToString());
         }
 
-
         [Theory]
         [InlineData(HttpStatusCode.GatewayTimeout)]  // 504
         [InlineData(HttpStatusCode.ServiceUnavailable)]  // 503
@@ -140,7 +137,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.NotNull(response.RequestMessage.Content);
             Assert.NotNull(response.RequestMessage.Content.Headers.ContentLength);
             Assert.Equal("Hello World", await response.RequestMessage.Content.ReadAsStringAsync());
-
         }
 
         [Theory]
@@ -196,7 +192,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.Equal(response.RequestMessage.Content.Headers.ContentLength, -1);
         }
 
-
         [Theory(Skip = "Test takes a while to run")]
         [InlineData(HttpStatusCode.GatewayTimeout)]  // 504
         [InlineData(HttpStatusCode.ServiceUnavailable)]  // 503
@@ -246,15 +241,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             // Arrange
             var retryResponse = new HttpResponseMessage(statusCode);
             var futureTime = DateTime.Now + TimeSpan.FromSeconds(3);// 3 seconds from now
-            var futureTimeString = futureTime.ToString(CultureInfo.InvariantCulture.DateTimeFormat.RFC1123Pattern);
+            var futureTimeString = futureTime.ToString(CultureInfo.InvariantCulture.DateTimeFormat.RFC1123Pattern, CultureInfo.InvariantCulture);
             Assert.Contains("GMT", futureTimeString); // http date always end in GMT according to the spec
-            retryResponse.Headers.TryAddWithoutValidation(RetryAfter, futureTimeString);
+            Assert.True(retryResponse.Headers.TryAddWithoutValidation(RetryAfter, futureTimeString));
             // Act
             await DelayTestWithMessage(retryResponse, 1, "Init");
             // Assert
             Assert.Equal("Init Work 1", Message);
         }
-
 
         [Theory(Skip = "Skipped as this takes 9 minutes to run for each scenario")] // Takes 9 minutes to run for each scenario
         [InlineData(HttpStatusCode.GatewayTimeout)]  // 504
@@ -351,7 +345,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             Assert.NotSame(response.RequestMessage, httpRequestMessage);
         }
 
-
         [Theory]
         [InlineData(1, HttpStatusCode.BadGateway, true)]
         [InlineData(2, HttpStatusCode.BadGateway, true)]
@@ -411,14 +404,16 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
             catch(Exception exception)
             {
                 // Assert
-                Assert.IsType<InvalidOperationException>(exception);
+                Assert.IsType<AggregateException>(exception);
+                var aggregateException = exception as AggregateException;
                 Assert.True(isExceptionExpected);
-                Assert.Equal("Too many retries performed", exception.Message);
+                Assert.StartsWith("Too many retries performed.", aggregateException.Message);
+                Assert.Equal(1 + expectedMaxRetry, aggregateException.InnerExceptions.Count);
+                Assert.All(aggregateException.InnerExceptions, innerexception => Assert.Contains(expectedStatusCode.ToString(), innerexception.Message));
             }
 
             // Assert
             mockHttpMessageHandler.Protected().Verify<Task<HttpResponseMessage>>("SendAsync", Times.Exactly(1 + expectedMaxRetry), ItExpr.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>());
-
         }
 
         private async Task DelayTestWithMessage(HttpResponseMessage response, int count, string message, int delay = RetryHandlerOption.MaxDelay)
