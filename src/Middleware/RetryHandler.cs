@@ -242,9 +242,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(response.Content != null)
             {
 #if NET5_0_OR_GREATER
-                var responseContent = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+                errorMessage = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
 #else
-                var responseContent = await response.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                errorMessage = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
 #endif
                 errorMessage = GetStringFromContent(responseContent);
             }
