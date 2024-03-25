@@ -231,7 +231,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             };
         }
 
-        private static async Task<Exception> GetInnerException(HttpResponseMessage response, CancellationToken cancellationToken)
+        private static async Task<Exception> GetInnerExceptionAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+
         {
             var httpStatusCode = response.StatusCode;
             string? errorMessage = null;
