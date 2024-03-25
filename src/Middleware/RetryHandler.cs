@@ -250,7 +250,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 errorMessage = GetStringFromContent(responseContent);
             }
 
-            return new Exception($"HTTP request failed with status code: {httpStatusCode}.{errorMessage}");
+            return new ApiException($"HTTP request failed with status code: {httpStatusCode}.{errorMessage}")
+            {
+                ResponseStatusCode = (int)response.StatusCode,
+                ResponseHeaders = response.Headers.ToDictionary()
+            };
         }
 
         private static string GetStringFromContent(byte[] content)
