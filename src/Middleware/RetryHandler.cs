@@ -150,7 +150,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             exceptions.Add(await GetInnerException(response, cancellationToken));
 
-            throw new AggregateException("Too many retries performed.", exceptions);
+            throw new AggregateException($"Too many retries performed. More than {retryCount} retries encountered while sending the request.", exceptions);
         }
 
         /// <summary>
