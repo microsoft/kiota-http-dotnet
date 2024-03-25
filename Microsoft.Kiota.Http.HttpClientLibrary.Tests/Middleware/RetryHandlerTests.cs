@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.Kiota.Http.HttpClientLibrary.Tests.Mocks;
@@ -220,6 +221,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests.Middleware
                 Assert.IsType<AggregateException>(exception);
                 var aggregateException = exception as AggregateException;
                 Assert.StartsWith("Too many retries performed.", aggregateException.Message);
+                Assert.All(aggregateException.InnerExceptions, innerexception => Assert.IsType<ApiException>(innerexception));
+                Assert.All(aggregateException.InnerExceptions, innerexception => Assert.True((innerexception as ApiException).ResponseStatusCode == (int)statusCode));
                 Assert.False(httpRequestMessage.Headers.TryGetValues(RetryAttempt, out _), "Don't set Retry-Attempt Header");
             }
         }

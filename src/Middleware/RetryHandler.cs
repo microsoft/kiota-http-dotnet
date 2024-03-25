@@ -5,12 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Extensions;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 
@@ -103,7 +105,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             while(retryCount < retryOption.MaxRetry)
             {
-                exceptions.Add(await GetInnerException(response, cancellationToken));
+                exceptions.Add(await GetInnerExceptionAsync(response));
                 using var retryActivity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)} - attempt {retryCount}");
                 retryActivity?.SetTag("http.retry_count", retryCount);
                 retryActivity?.SetTag("http.status_code", response.StatusCode);
@@ -148,7 +150,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 }
             }
 
-            exceptions.Add(await GetInnerException(response, cancellationToken));
+            exceptions.Add(await GetInnerExceptionAsync(response));
 
             throw new AggregateException($"Too many retries performed. More than {retryCount} retries encountered while sending the request.", exceptions);
         }
@@ -231,42 +233,22 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             };
         }
 
-        private static async Task<Exception> GetInnerExceptionAsync(HttpResponseMessage response, CancellationToken cancellationToken)
-
+        private static async Task<Exception> GetInnerExceptionAsync(HttpResponseMessage response)
         {
-            var httpStatusCode = response.StatusCode;
             string? errorMessage = null;
 
             // Drain response content to free connections. Need to perform this
             // before retry attempt and before the TooManyRetries ServiceException.
             if(response.Content != null)
             {
-#if NET5_0_OR_GREATER
-                errorMessage = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-#else
                 errorMessage = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-#endif
-                errorMessage = GetStringFromContent(responseContent);
             }
 
-            return new ApiException($"HTTP request failed with status code: {httpStatusCode}.{errorMessage}")
+            return new ApiException($"HTTP request failed with status code: {response.StatusCode}.{errorMessage}")
             {
                 ResponseStatusCode = (int)response.StatusCode,
-                ResponseHeaders = response.Headers.ToDictionary()
+                ResponseHeaders = response.Headers.ToDictionary(header => header.Key, header => header.Value),
             };
-        }
-
-        private static string GetStringFromContent(byte[] content)
-        {
-            try
-            {
-                return System.Text.Encoding.UTF8.GetString(content);
-            }
-            catch(Exception)
-            {
-                return "The Graph retry handler was unable to cast the response into a UTF8 string.";
-            }
         }
     }
 }

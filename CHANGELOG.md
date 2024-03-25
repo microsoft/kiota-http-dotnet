@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.8] - 2024-03-25]
+
+## Changed
+
+- When too many retries are attempted, the RetryHandler will now throw an `AggregateException` (instead of an `InvalidOperationException`).
+  The `InnerExceptions` property of the `AggregateException` will contain a list of `ApiException` with the HTTP status code and an error message if available.
+
 ## [1.3.7] - 2024-02-26
 
 ### Changed
