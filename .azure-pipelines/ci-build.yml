@@ -251,7 +251,7 @@ extends:
                     filePath: $(Pipeline.Workspace)\scripts\GetNugetPackageVersion.ps1
                     pwsh: true
                     arguments: '-packageDirPath "$(Pipeline.Workspace)/"'
-                - task: NuGetCommand@2
+                - task: 1ES.PublishNuGet@1
                   displayName: 'NuGet push'
                   inputs:
                     command: push
