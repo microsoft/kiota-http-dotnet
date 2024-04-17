@@ -538,6 +538,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 Method = new HttpMethod(requestInfo.HttpMethod.ToString().ToUpperInvariant()),
                 RequestUri = requestUri,
+                Version=new Version(2,0)
             };
 
             if(requestInfo.RequestOptions.Any())
