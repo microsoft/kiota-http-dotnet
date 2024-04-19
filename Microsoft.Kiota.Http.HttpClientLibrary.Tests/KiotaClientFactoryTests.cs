@@ -73,8 +73,13 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             var defaultHandler = KiotaClientFactory.GetDefaultHttpMessageHandler(proxy);
             // Assert
             Assert.NotNull(defaultHandler);
+#if NETFRAMEWORK
+            Assert.IsType<WinHttpHandler>(defaultHandler);
+            Assert.Equal(proxy, ((WinHttpHandler)defaultHandler).Proxy);
+#else
             Assert.IsType<HttpClientHandler>(defaultHandler);
             Assert.Equal(proxy, ((HttpClientHandler)defaultHandler).Proxy);
+#endif
 
         }
     }
