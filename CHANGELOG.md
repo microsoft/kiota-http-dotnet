@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.10] - 2024-04-19
+
+## Changed
+
+- Have made System.* dependencies only be included on Net Standard's TFM & net 5 (https://github.com/microsoft/kiota-http-dotnet/issues/230)
+
 ## [1.3.9] - 2024-04-17
 
 ## Changed
