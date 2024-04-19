@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.11] - 2024-04-19
+
+## Changed
+
+- Fixes default handler for NET framework to unlock HTTP/2 scenarios (https://github.com/microsoft/kiota-http-dotnet/issues/237)
+
 ## [1.3.10] - 2024-04-19
 
 ## Changed

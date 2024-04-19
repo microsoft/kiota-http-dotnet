@@ -83,7 +83,14 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns/>
         public static HttpMessageHandler GetDefaultHttpMessageHandler(IWebProxy? proxy = null)
         {
+#if NETFRAMEWORK
+            // If custom proxy is passed, the WindowsProxyUsePolicy will need updating
+            // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Net.Http.WinHttpHandler/src/System/Net/Http/WinHttpHandler.cs#L575
+            var proxyPolicy = proxy != null ? WindowsProxyUsePolicy.UseCustomProxy : WindowsProxyUsePolicy.UseWinHttpProxy;
+            return new WinHttpHandler { Proxy = proxy, AutomaticDecompression = DecompressionMethods.None , WindowsProxyUsePolicy = proxyPolicy, SendTimeout = System.Threading.Timeout.InfiniteTimeSpan, ReceiveDataTimeout = System.Threading.Timeout.InfiniteTimeSpan, ReceiveHeadersTimeout = System.Threading.Timeout.InfiniteTimeSpan };
+#else
             return new HttpClientHandler { Proxy = proxy, AllowAutoRedirect = false };
+#endif
         }
     }
 }
