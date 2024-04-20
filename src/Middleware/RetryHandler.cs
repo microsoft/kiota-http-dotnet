@@ -105,7 +105,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
             while(retryCount < retryOption.MaxRetry)
             {
-                exceptions.Add(await GetInnerExceptionAsync(response));
+                exceptions.Add(await GetInnerExceptionAsync(response).ConfigureAwait(false));
                 using var retryActivity = activitySource?.StartActivity($"{nameof(RetryHandler)}_{nameof(SendAsync)} - attempt {retryCount}");
                 retryActivity?.SetTag("http.retry_count", retryCount);
                 retryActivity?.SetTag("http.status_code", response.StatusCode);
@@ -139,7 +139,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 AddOrUpdateRetryAttempt(request, retryCount);
 
                 // Delay time
-                await delay;
+                await delay.ConfigureAwait(false);
 
                 // Call base.SendAsync to send the request
                 response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -150,7 +150,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 }
             }
 
-            exceptions.Add(await GetInnerExceptionAsync(response));
+            exceptions.Add(await GetInnerExceptionAsync(response).ConfigureAwait(false));
 
             throw new AggregateException($"Too many retries performed. More than {retryCount} retries encountered while sending the request.", exceptions);
         }

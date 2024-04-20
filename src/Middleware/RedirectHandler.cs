@@ -64,7 +64,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             {
 
                 // send request first time to get response
-                var response = await base.SendAsync(request, cancellationToken);
+                var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
                 // check response status code and redirect handler option
                 if(ShouldRedirect(response, redirectOption))
@@ -99,7 +99,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         {
                             return response;// We can't clone the original request to replay it.
                         }
-                        var newRequest = await originalRequest.CloneAsync(cancellationToken);
+                        var newRequest = await originalRequest.CloneAsync(cancellationToken).ConfigureAwait(false);
 
                         // status code == 303: change request method from post to get and content to be null
                         if(response.StatusCode == HttpStatusCode.SeeOther)
@@ -135,7 +135,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                         }
 
                         // Send redirect request to get response
-                        response = await base.SendAsync(newRequest, cancellationToken);
+                        response = await base.SendAsync(newRequest, cancellationToken).ConfigureAwait(false);
 
                         // Check response status code
                         if(ShouldRedirect(response, redirectOption))

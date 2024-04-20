@@ -87,7 +87,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                     return chaosResponse;
                 }
 
-                return await base.SendAsync(request, cancellationToken);
+                return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
             finally
             {

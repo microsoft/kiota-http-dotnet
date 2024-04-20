@@ -59,7 +59,7 @@ public class HeadersInspectionHandler : DelegatingHandler
                         options.RequestHeaders[contentHeaders.Key] = contentHeaders.Value.ToArray();
                     }
             }
-            var response = await base.SendAsync(request, cancellationToken);
+            var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
             if(options.InspectResponseHeaders)
             {
                 foreach(var header in response.Headers)
