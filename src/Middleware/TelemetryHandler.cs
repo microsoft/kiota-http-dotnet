@@ -44,11 +44,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             if(telemetryHandlerOption.TelemetryConfigurator != null)
             {
                 var enrichedRequest = telemetryHandlerOption.TelemetryConfigurator(request);
-                return await base.SendAsync(enrichedRequest, cancellationToken);
+                return await base.SendAsync(enrichedRequest, cancellationToken).ConfigureAwait(false);
             }
 
             // Just forward the request if TelemetryConfigurator was intentionally set to null
-            return await base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
     }
 }
