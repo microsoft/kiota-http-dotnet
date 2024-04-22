@@ -2,10 +2,11 @@
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
@@ -32,17 +33,37 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// Creates a default set of middleware to be used by the <see cref="HttpClient"/>.
         /// </summary>
         /// <returns>A list of the default handlers used by the client.</returns>
-        public static IList<DelegatingHandler> CreateDefaultHandlers()
+        public static IList<DelegatingHandler> CreateDefaultHandlers(IRequestOption[]? optionsForHandlers = null)
         {
+            optionsForHandlers ??= [];
+
             return new List<DelegatingHandler>
             {
                 //add the default middlewares as they are ready
-                new UriReplacementHandler<UriReplacementHandlerOption>(),
-                new RetryHandler(),
-                new RedirectHandler(),
-                new ParametersNameDecodingHandler(),
-                new UserAgentHandler(),
-                new HeadersInspectionHandler(),
+                
+                optionsForHandlers.OfType<UriReplacementHandlerOption>().FirstOrDefault() is UriReplacementHandlerOption uriReplacementOption
+                ? new UriReplacementHandler<UriReplacementHandlerOption>(uriReplacementOption)
+                : new UriReplacementHandler<UriReplacementHandlerOption>(),
+
+                optionsForHandlers.OfType<RetryHandlerOption>().FirstOrDefault() is RetryHandlerOption retryHandlerOption
+                ? new RetryHandler(retryHandlerOption)
+                : new RetryHandler(),
+
+                optionsForHandlers.OfType<RedirectHandlerOption>().FirstOrDefault() is RedirectHandlerOption redirectHandlerOption
+                ? new RedirectHandler(redirectHandlerOption)
+                : new RedirectHandler(),
+
+                optionsForHandlers.OfType<ParametersNameDecodingOption>().FirstOrDefault() is ParametersNameDecodingOption parametersNameDecodingOption
+                ? new ParametersNameDecodingHandler(parametersNameDecodingOption)
+                : new ParametersNameDecodingHandler(),
+
+                optionsForHandlers.OfType<UserAgentHandlerOption>().FirstOrDefault() is UserAgentHandlerOption userAgentHandlerOption
+                ? new UserAgentHandler(userAgentHandlerOption)
+                : new UserAgentHandler(),
+
+                optionsForHandlers.OfType<HeadersInspectionHandlerOption>().FirstOrDefault() is HeadersInspectionHandlerOption headersInspectionHandlerOption
+                ? new HeadersInspectionHandler(headersInspectionHandlerOption)
+                : new HeadersInspectionHandler(),
             };
         }
         /// <summary>
@@ -66,7 +87,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 }
             }
             if(finalHandler != null)
-                handlers[handlers.Length-1].InnerHandler = finalHandler;
+                handlers[handlers.Length - 1].InnerHandler = finalHandler;
             return handlers[0];//first
         }
         /// <summary>
@@ -76,7 +97,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>The created <see cref="DelegatingHandler"/>.</returns>
         public static DelegatingHandler? ChainHandlersCollectionAndGetFirstLink(params DelegatingHandler[] handlers)
         {
-            return ChainHandlersCollectionAndGetFirstLink(null,handlers);
+            return ChainHandlersCollectionAndGetFirstLink(null, handlers);
         }
         /// <summary>
         /// Gets a default Http Client handler with the appropriate proxy configurations
