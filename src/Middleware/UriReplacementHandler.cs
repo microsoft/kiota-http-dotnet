@@ -42,7 +42,7 @@ public class UriReplacementHandler<TUriReplacementHandlerOption> : DelegatingHan
         try
         {
             request.RequestUri = uriReplacement.Replace(request.RequestUri);
-            return await base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Adds `ConfigureAwait(false)` calls to async calls (https://github.com/microsoft/kiota-http-dotnet/issues/240). 
+
 ## [1.3.11] - 2024-04-19
 
 ## Changed

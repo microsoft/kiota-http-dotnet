@@ -54,7 +54,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                     request.Headers.AcceptEncoding.Add(gzipQHeaderValue);
                 }
 
-                HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
+                HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
                 // Decompress response content when Content-Encoding: gzip header is present.
                 if(ShouldDecompressContent(response))
