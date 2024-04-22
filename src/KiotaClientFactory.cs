@@ -2,8 +2,8 @@
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using Microsoft.Kiota.Abstractions;
@@ -87,7 +87,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 }
             }
             if(finalHandler != null)
-                handlers[handlers.Length - 1].InnerHandler = finalHandler;
+                handlers[handlers.Length-1].InnerHandler = finalHandler;
             return handlers[0];//first
         }
         /// <summary>
@@ -97,7 +97,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>The created <see cref="DelegatingHandler"/>.</returns>
         public static DelegatingHandler? ChainHandlersCollectionAndGetFirstLink(params DelegatingHandler[] handlers)
         {
-            return ChainHandlersCollectionAndGetFirstLink(null, handlers);
+            return ChainHandlersCollectionAndGetFirstLink(null,handlers);
         }
         /// <summary>
         /// Gets a default Http Client handler with the appropriate proxy configurations
