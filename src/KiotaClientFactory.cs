@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Http;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -36,6 +37,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             return new List<DelegatingHandler>
             {
                 //add the default middlewares as they are ready
+                new UriReplacementHandler<UriReplacementHandlerOption>(),
                 new RetryHandler(),
                 new RedirectHandler(),
                 new ParametersNameDecodingHandler(),

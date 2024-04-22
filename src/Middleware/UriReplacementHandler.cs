@@ -12,21 +12,29 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 /// <typeparam name="TUriReplacementHandlerOption">A type with the rules used to perform a URI replacement.</typeparam>
 public class UriReplacementHandler<TUriReplacementHandlerOption> : DelegatingHandler where TUriReplacementHandlerOption : IUriReplacementHandlerOption
 {
-    private readonly TUriReplacementHandlerOption uriReplacement;
+    private readonly TUriReplacementHandlerOption? _uriReplacement;
 
     /// <summary>
     /// Creates a new UriReplacementHandler.
     /// </summary>
     /// <param name="uriReplacement">An object with the URI replacement rules.</param>
-    public UriReplacementHandler(TUriReplacementHandlerOption uriReplacement)
+    public UriReplacementHandler(TUriReplacementHandlerOption? uriReplacement = default)
     {
-        this.uriReplacement = uriReplacement;
+        this._uriReplacement = uriReplacement;
     }
 
     /// <inheritdoc/>
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
     {
+        var uriReplacement = request.GetRequestOption<TUriReplacementHandlerOption>() ?? _uriReplacement;
+
+        // If there is no URI replacement to apply, then just skip this handler.
+        if(uriReplacement is null)
+        {
+            return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+
         Activity? activity;
         if(request.GetRequestOption<ObservabilityOptions>() is { } obsOptions)
         {
