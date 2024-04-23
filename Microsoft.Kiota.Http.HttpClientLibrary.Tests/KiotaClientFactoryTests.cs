@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
@@ -88,7 +90,10 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         [Fact]
         public void CreateWithNullOrEmptyHandlersReturnsHttpClient()
         {
-            var client = KiotaClientFactory.Create(null);
+            var client = KiotaClientFactory.Create(null, null);
+            Assert.IsType<HttpClient>(client);
+
+            client = KiotaClientFactory.Create(new List<DelegatingHandler>());
             Assert.IsType<HttpClient>(client);
         }
 
