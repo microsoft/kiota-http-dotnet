@@ -1,5 +1,9 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using System.Net.Http;
+using Castle.Components.DictionaryAdapter.Xml;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.Kiota.Http.HttpClientLibrary.Tests.Mocks;
 using Xunit;
 
@@ -81,6 +85,31 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.Equal(proxy, ((HttpClientHandler)defaultHandler).Proxy);
 #endif
 
+        }
+
+        [Fact]
+        public void CreateDefaultHandlersWithOptions()
+        {
+            // Arrange
+            var retryHandlerOption = new RetryHandlerOption { MaxRetry = 5, ShouldRetry = (_, _, _) => true };
+
+
+            // Act
+            var handlers = KiotaClientFactory.CreateDefaultHandlers(new[] { retryHandlerOption });
+
+            RetryHandler retryHandler = default;
+            foreach(var handler in handlers)
+            {
+                if(handler is RetryHandler retryFromDefault)
+                {
+                    retryHandler = retryFromDefault;
+                    break;
+                }
+            }
+
+            // Assert
+            Assert.NotNull(retryHandler);
+            Assert.NotNull(retryHandler.RetryOption);
         }
     }
 }

@@ -22,10 +22,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// Initializes the <see cref="HttpClient"/> with the default configuration and middlewares including a authentication middleware using the <see cref="IAuthenticationProvider"/> if provided.
         /// </summary>
         /// <param name="finalHandler">The final <see cref="HttpMessageHandler"/> in the http pipeline. Can be configured for proxies, auto-decompression and auto-redirects </param>
+        /// <param name="optionsForHandlers">A array of <see cref="IRequestOption"/> objects passed to the default handlers.</param>
         /// <returns>The <see cref="HttpClient"/> with the default middlewares.</returns>
-        public static HttpClient Create(HttpMessageHandler? finalHandler = null)
+        public static HttpClient Create(HttpMessageHandler? finalHandler = null, IRequestOption[]? optionsForHandlers = null)
         {
-            var defaultHandlers = CreateDefaultHandlers();
+            var defaultHandlers = CreateDefaultHandlers(optionsForHandlers);
             var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), defaultHandlers.ToArray());
             return handler != null ? new HttpClient(handler) : new HttpClient();
         }
