@@ -96,7 +96,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         public void CreateWithCustomMiddlewarePipelineReturnsHttpClient()
         {
             var handlers = KiotaClientFactory.CreateDefaultHandlers();
-            handlers.Append(new CompressionHandler());
+            handlers.Add(new CompressionHandler());
             var client = KiotaClientFactory.Create(handlers);
             Assert.IsType<HttpClient>(client);
         }
