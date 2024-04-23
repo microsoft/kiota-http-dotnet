@@ -28,6 +28,21 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), defaultHandlers.ToArray());
             return handler != null ? new HttpClient(handler) : new HttpClient();
         }
+
+        /// <summary>
+        /// Initializes the <see cref="HttpClient"/> with a custom middleware pipeline.
+        /// </summary>
+        /// <param name="handlers">The <see cref="DelegatingHandler"/> instances to create the <see cref="DelegatingHandler"/> from.</param>
+        /// <param name="finalHandler">The final <see cref="HttpMessageHandler"/> in the http pipeline. Can be configured for proxies, auto-decompression and auto-redirects</param>
+        /// <returns>The <see cref="HttpClient"/> with the custom handlers.</returns>
+        public static HttpClient Create(IList<DelegatingHandler> handlers, HttpMessageHandler? finalHandler = null)
+        {
+            if(handlers == null || !handlers.Any())
+                return Create(finalHandler);
+            var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), handlers.ToArray());
+            return handler != null ? new HttpClient(handler) : new HttpClient();
+        }
+
         /// <summary>
         /// Creates a default set of middleware to be used by the <see cref="HttpClient"/>.
         /// </summary>

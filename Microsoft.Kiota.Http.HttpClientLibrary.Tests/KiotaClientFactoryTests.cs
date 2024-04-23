@@ -1,5 +1,7 @@
-﻿using System.Net;
+﻿using System.Linq;
+using System.Net;
 using System.Net.Http;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.Kiota.Http.HttpClientLibrary.Tests.Mocks;
 using Xunit;
 
@@ -81,6 +83,22 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.Equal(proxy, ((HttpClientHandler)defaultHandler).Proxy);
 #endif
 
+        }
+
+        [Fact]
+        public void CreateWithNullOrEmptyHandlersReturnsHttpClient()
+        {
+            var client = KiotaClientFactory.Create(null);
+            Assert.IsType<HttpClient>(client);
+        }
+
+        [Fact]
+        public void CreateWithCustomMiddlewarePipelineReturnsHttpClient()
+        {
+            var handlers = KiotaClientFactory.CreateDefaultHandlers();
+            handlers.Append(new CompressionHandler());
+            var client = KiotaClientFactory.Create(handlers);
+            Assert.IsType<HttpClient>(client);
         }
     }
 }
