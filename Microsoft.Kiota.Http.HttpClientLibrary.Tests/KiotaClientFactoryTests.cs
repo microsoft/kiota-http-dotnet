@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using Castle.Components.DictionaryAdapter.Xml;
@@ -110,6 +112,25 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             // Assert
             Assert.NotNull(retryHandler);
             Assert.NotNull(retryHandler.RetryOption);
+        }
+
+        [Fact]
+        public void CreateWithNullOrEmptyHandlersReturnsHttpClient()
+        {
+            var client = KiotaClientFactory.Create(null, null);
+            Assert.IsType<HttpClient>(client);
+
+            client = KiotaClientFactory.Create(new List<DelegatingHandler>());
+            Assert.IsType<HttpClient>(client);
+        }
+
+        [Fact]
+        public void CreateWithCustomMiddlewarePipelineReturnsHttpClient()
+        {
+            var handlers = KiotaClientFactory.CreateDefaultHandlers();
+            handlers.Add(new CompressionHandler());
+            var client = KiotaClientFactory.Create(handlers);
+            Assert.IsType<HttpClient>(client);
         }
     }
 }
