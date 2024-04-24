@@ -117,7 +117,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         [Fact]
         public void CreateWithNullOrEmptyHandlersReturnsHttpClient()
         {
-            var client = KiotaClientFactory.Create(null, null);
+            var client = KiotaClientFactory.Create(null, (HttpMessageHandler)null);
             Assert.IsType<HttpClient>(client);
 
             client = KiotaClientFactory.Create(new List<DelegatingHandler>());
