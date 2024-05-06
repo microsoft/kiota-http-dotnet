@@ -69,6 +69,24 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         }
 
         [Fact]
+        public void GetDefaultHttpMessageHandlerEnablesMultipleHttp2Connections()
+        {
+            // Arrange
+            var proxy = new WebProxy("http://localhost:8888", false);
+            // Act
+            var defaultHandler = KiotaClientFactory.GetDefaultHttpMessageHandler(proxy);
+            // Assert
+            Assert.NotNull(defaultHandler);
+#if NETFRAMEWORK
+            Assert.IsType<WinHttpHandler>(defaultHandler);
+            Assert.True(((WinHttpHandler)defaultHandler).EnableMultipleHttp2Connections);
+#else
+            Assert.IsType<SocketsHttpHandler>(defaultHandler);
+            Assert.True(((SocketsHttpHandler)defaultHandler).EnableMultipleHttp2Connections);
+#endif
+        }
+
+        [Fact]
         public void GetDefaultHttpMessageHandlerSetsUpProxy()
         {
             // Arrange
@@ -81,10 +99,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             Assert.IsType<WinHttpHandler>(defaultHandler);
             Assert.Equal(proxy, ((WinHttpHandler)defaultHandler).Proxy);
 #else
-            Assert.IsType<HttpClientHandler>(defaultHandler);
-            Assert.Equal(proxy, ((HttpClientHandler)defaultHandler).Proxy);
+            Assert.IsType<SocketsHttpHandler>(defaultHandler);
+            Assert.Equal(proxy, ((SocketsHttpHandler)defaultHandler).Proxy);
 #endif
-
         }
 
         [Fact]
