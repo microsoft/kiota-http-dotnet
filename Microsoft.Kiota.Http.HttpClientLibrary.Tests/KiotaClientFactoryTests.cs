@@ -71,10 +71,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         [Fact]
         public void GetDefaultHttpMessageHandlerEnablesMultipleHttp2Connections()
         {
-            // Arrange
-            var proxy = new WebProxy("http://localhost:8888", false);
             // Act
-            var defaultHandler = KiotaClientFactory.GetDefaultHttpMessageHandler(proxy);
+            var defaultHandler = KiotaClientFactory.GetDefaultHttpMessageHandler();
             // Assert
             Assert.NotNull(defaultHandler);
 #if NETFRAMEWORK
