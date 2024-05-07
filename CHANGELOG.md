@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2024-05-07
+
+## Changed
+
+- Use `SocketsHttpHandler` with `EnableMultipleHttp2Connections` as default HTTP message handler.
+
 ## [1.4.0]
 
 ## Added
@@ -16,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.12] - 2024-04-22
 
 - UriReplacementHandler improvements to be added to middleware pipeline by default and respects options set in the HttpRequestMessage (https://github.com/microsoft/kiota-http-dotnet/issues/242)
-- Adds `ConfigureAwait(false)` calls to async calls (https://github.com/microsoft/kiota-http-dotnet/issues/240). 
+- Adds `ConfigureAwait(false)` calls to async calls (https://github.com/microsoft/kiota-http-dotnet/issues/240).
 
 ## [1.3.11] - 2024-04-19
 
@@ -28,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
-- Have made System.* dependencies only be included on Net Standard's TFM & net 5 (https://github.com/microsoft/kiota-http-dotnet/issues/230)
+- Have made System.\* dependencies only be included on Net Standard's TFM & net 5 (https://github.com/microsoft/kiota-http-dotnet/issues/230)
 
 ## [1.3.9] - 2024-04-17
 
