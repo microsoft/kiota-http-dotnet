@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2024-05-07
+
+## Changed
+
+- Use `SocketsHttpHandler` with `EnableMultipleHttp2Connections` as default HTTP message handler.
+
 ## [1.4.0]
 
 ## Added
