@@ -6,6 +6,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
@@ -21,10 +22,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// Initializes the <see cref="HttpClient"/> with the default configuration and middlewares including a authentication middleware using the <see cref="IAuthenticationProvider"/> if provided.
         /// </summary>
         /// <param name="finalHandler">The final <see cref="HttpMessageHandler"/> in the http pipeline. Can be configured for proxies, auto-decompression and auto-redirects </param>
+        /// <param name="optionsForHandlers">A array of <see cref="IRequestOption"/> objects passed to the default handlers.</param>
         /// <returns>The <see cref="HttpClient"/> with the default middlewares.</returns>
-        public static HttpClient Create(HttpMessageHandler? finalHandler = null)
+        public static HttpClient Create(HttpMessageHandler? finalHandler = null, IRequestOption[]? optionsForHandlers = null)
         {
-            var defaultHandlers = CreateDefaultHandlers();
+            var defaultHandlers = CreateDefaultHandlers(optionsForHandlers);
             var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), defaultHandlers.ToArray());
             return handler != null ? new HttpClient(handler) : new HttpClient();
         }
@@ -47,17 +49,37 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// Creates a default set of middleware to be used by the <see cref="HttpClient"/>.
         /// </summary>
         /// <returns>A list of the default handlers used by the client.</returns>
-        public static IList<DelegatingHandler> CreateDefaultHandlers()
+        public static IList<DelegatingHandler> CreateDefaultHandlers(IRequestOption[]? optionsForHandlers = null)
         {
+            optionsForHandlers ??= [];
+
             return new List<DelegatingHandler>
             {
                 //add the default middlewares as they are ready, and add them to the list below as well
-                new UriReplacementHandler<UriReplacementHandlerOption>(),
-                new RetryHandler(),
-                new RedirectHandler(),
-                new ParametersNameDecodingHandler(),
-                new UserAgentHandler(),
-                new HeadersInspectionHandler(),
+                
+                optionsForHandlers.OfType<UriReplacementHandlerOption>().FirstOrDefault() is UriReplacementHandlerOption uriReplacementOption
+                ? new UriReplacementHandler<UriReplacementHandlerOption>(uriReplacementOption)
+                : new UriReplacementHandler<UriReplacementHandlerOption>(),
+
+                optionsForHandlers.OfType<RetryHandlerOption>().FirstOrDefault() is RetryHandlerOption retryHandlerOption
+                ? new RetryHandler(retryHandlerOption)
+                : new RetryHandler(),
+
+                optionsForHandlers.OfType<RedirectHandlerOption>().FirstOrDefault() is RedirectHandlerOption redirectHandlerOption
+                ? new RedirectHandler(redirectHandlerOption)
+                : new RedirectHandler(),
+
+                optionsForHandlers.OfType<ParametersNameDecodingOption>().FirstOrDefault() is ParametersNameDecodingOption parametersNameDecodingOption
+                ? new ParametersNameDecodingHandler(parametersNameDecodingOption)
+                : new ParametersNameDecodingHandler(),
+
+                optionsForHandlers.OfType<UserAgentHandlerOption>().FirstOrDefault() is UserAgentHandlerOption userAgentHandlerOption
+                ? new UserAgentHandler(userAgentHandlerOption)
+                : new UserAgentHandler(),
+
+                optionsForHandlers.OfType<HeadersInspectionHandlerOption>().FirstOrDefault() is HeadersInspectionHandlerOption headersInspectionHandlerOption
+                ? new HeadersInspectionHandler(headersInspectionHandlerOption)
+                : new HeadersInspectionHandler(),
             };
         }
 

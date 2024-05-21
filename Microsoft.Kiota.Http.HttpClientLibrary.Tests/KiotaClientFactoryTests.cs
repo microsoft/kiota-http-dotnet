@@ -1,9 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
+using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.Kiota.Http.HttpClientLibrary.Tests.Mocks;
 using Xunit;
 
@@ -103,9 +103,25 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         }
 
         [Fact]
+        public void CreateDefaultHandlersWithOptions()
+        {
+            // Arrange
+            var retryHandlerOption = new RetryHandlerOption { MaxRetry = 5, ShouldRetry = (_, _, _) => true };
+
+
+            // Act
+            var handlers = KiotaClientFactory.CreateDefaultHandlers([retryHandlerOption]);
+            var retryHandler = handlers.OfType<RetryHandler>().FirstOrDefault();
+
+            // Assert
+            Assert.NotNull(retryHandler);
+            Assert.Equal(retryHandlerOption, retryHandler.RetryOption);
+        }
+
+        [Fact]
         public void CreateWithNullOrEmptyHandlersReturnsHttpClient()
         {
-            var client = KiotaClientFactory.Create(null, null);
+            var client = KiotaClientFactory.Create(null, (HttpMessageHandler)null);
             Assert.IsType<HttpClient>(client);
 
             client = KiotaClientFactory.Create(new List<DelegatingHandler>());
