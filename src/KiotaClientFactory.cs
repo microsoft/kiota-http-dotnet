@@ -56,7 +56,6 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             return new List<DelegatingHandler>
             {
                 //add the default middlewares as they are ready, and add them to the list below as well
-                //add the default middlewares as they are ready
                 
                 optionsForHandlers.OfType<UriReplacementHandlerOption>().FirstOrDefault() is UriReplacementHandlerOption uriReplacementOption
                 ? new UriReplacementHandler<UriReplacementHandlerOption>(uriReplacementOption)
