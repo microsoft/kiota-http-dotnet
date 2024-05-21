@@ -43,6 +43,13 @@ public class UriReplacementHandlerOption : IUriReplacementHandlerOption
         this.replacementPairs = replacementPairs;
     }
 
+    /// <summary>
+    /// Creates a new instance of UriReplacementOption with no replacements.
+    /// </summary>
+    /// <param name="isEnabled">Whether replacement is enabled.</param>
+    /// <remarks>Replacement is disabled by default.</remarks>
+    public UriReplacementHandlerOption(bool isEnabled = false) : this(isEnabled, Array.Empty<KeyValuePair<string, string>>()) { }
+
     /// <inheritdoc/>
     public bool IsEnabled()
     {
