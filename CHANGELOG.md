@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2024-05-21
+
 ### Added
 
 - Added an optional parameter to kiota middleware factory so options can be configured directly. [#233](https://github.com/microsoft/kiota-http-dotnet/issues/233)
 - `GetDefaultHandlerTypes` added to `KiotaClientFactory` if you're creating your own `HttpClient` and still want to use the default handlers.
+
+### Changed
+
+- Fixed an issue where fixed versions of abstractions would result in restore failures. [#256](https://github.com/microsoft/kiota-http-dotnet/issues/256)
 
 ## [1.4.1] - 2024-05-07
 
@@ -26,20 +32,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.3.12] - 2024-04-22
 
-- UriReplacementHandler improvements to be added to middleware pipeline by default and respects options set in the HttpRequestMessage (https://github.com/microsoft/kiota-http-dotnet/issues/242)
-- Adds `ConfigureAwait(false)` calls to async calls (https://github.com/microsoft/kiota-http-dotnet/issues/240). 
+- UriReplacementHandler improvements to be added to middleware pipeline by default and respects options set in the HttpRequestMessage (<https://github.com/microsoft/kiota-http-dotnet/issues/242>)
+- Adds `ConfigureAwait(false)` calls to async calls (<https://github.com/microsoft/kiota-http-dotnet/issues/240>).
 
 ## [1.3.11] - 2024-04-19
 
 ## Changed
 
-- Fixes default handler for NET framework to unlock HTTP/2 scenarios (https://github.com/microsoft/kiota-http-dotnet/issues/237)
+- Fixes default handler for NET framework to unlock HTTP/2 scenarios (<https://github.com/microsoft/kiota-http-dotnet/issues/237>)
 
 ## [1.3.10] - 2024-04-19
 
 ## Changed
 
-- Have made System.* dependencies only be included on Net Standard's TFM & net 5 (https://github.com/microsoft/kiota-http-dotnet/issues/230)
+- Have made System.* dependencies only be included on Net Standard's TFM & net 5 (<https://github.com/microsoft/kiota-http-dotnet/issues/230>)
 
 ## [1.3.9] - 2024-04-17
 
@@ -92,7 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Fixes multiple initialization of `ActivitySource` instances on each request send(https://github.com/microsoft/kiota-http-dotnet/issues/161).
+- Fixes multiple initialization of `ActivitySource` instances on each request send(<https://github.com/microsoft/kiota-http-dotnet/issues/161>).
 
 ## [1.3.0] - 2023-11-02
 
