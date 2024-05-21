@@ -364,9 +364,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             var mockParseNode = new Mock<IParseNode>();
             mockParseNode.Setup<IParsable>(x => x.GetObjectValue(It.IsAny<ParsableFactory<MockEntity>>()))
             .Returns(new MockEntity());
-            var mockParseNodeFactory = new Mock<IParseNodeFactory>();
-            mockParseNodeFactory.Setup<IParseNode>(x => x.GetRootParseNode(It.IsAny<string>(), It.IsAny<Stream>()))
-                .Returns(mockParseNode.Object);
+            var mockParseNodeFactory = new Mock<IAsyncParseNodeFactory>();
+            mockParseNodeFactory.Setup(x => x.GetRootParseNodeAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockParseNode.Object));
             var adapter = new HttpClientRequestAdapter(_authenticationProvider, httpClient: client, parseNodeFactory: mockParseNodeFactory.Object);
             var requestInfo = new RequestInformation
             {
@@ -393,7 +393,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                     StatusCode = methodCalled ? HttpStatusCode.OK : HttpStatusCode.Unauthorized,
                     Content = new StreamContent(new MemoryStream(Encoding.UTF8.GetBytes("Test")))
                 };
-                if (!methodCalled)
+                if(!methodCalled)
                     response.Headers.WwwAuthenticate.Add(new("Bearer", "realm=\"\", authorization_uri=\"https://login.microsoftonline.com/common/oauth2/authorize\", client_id=\"00000003-0000-0000-c000-000000000000\", error=\"insufficient_claims\", claims=\"eyJhY2Nlc3NfdG9rZW4iOnsibmJmIjp7ImVzc2VudGlhbCI6dHJ1ZSwgInZhbHVlIjoiMTY1MjgxMzUwOCJ9fX0=\""));
                 methodCalled = true;
                 return Task.FromResult(response);
@@ -440,7 +440,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                 var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo);
                 Assert.Fail("Expected an ApiException to be thrown");
             }
-            catch (ApiException e)
+            catch(ApiException e)
             {
                 Assert.Equal((int)statusCode, e.ResponseStatusCode);
                 Assert.True(e.ResponseHeaders.ContainsKey("request-id"));
@@ -467,9 +467,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             var mockParseNode = new Mock<IParseNode>();
             mockParseNode.Setup<IParsable>(x => x.GetObjectValue(It.IsAny<ParsableFactory<IParsable>>()))
             .Returns(new MockError("A general error occured"));
-            var mockParseNodeFactory = new Mock<IParseNodeFactory>();
-            mockParseNodeFactory.Setup<IParseNode>(x => x.GetRootParseNode(It.IsAny<string>(), It.IsAny<Stream>()))
-                .Returns(mockParseNode.Object);
+            var mockParseNodeFactory = new Mock<IAsyncParseNodeFactory>();
+            mockParseNodeFactory.Setup(x => x.GetRootParseNodeAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockParseNode.Object));
             var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
             var requestInfo = new RequestInformation
             {
@@ -485,7 +485,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                 var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo, errorMapping);
                 Assert.Fail("Expected an ApiException to be thrown");
             }
-            catch (MockError mockError)
+            catch(MockError mockError)
             {
                 Assert.Equal((int)statusCode, mockError.ResponseStatusCode);
                 Assert.Equal("A general error occured", mockError.Message);
@@ -511,9 +511,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             var mockParseNode = new Mock<IParseNode>();
             mockParseNode.Setup<IParsable>(x => x.GetObjectValue(It.IsAny<ParsableFactory<IParsable>>()))
             .Returns(new MockError("A general error occured: " + statusCode.ToString()));
-            var mockParseNodeFactory = new Mock<IParseNodeFactory>();
-            mockParseNodeFactory.Setup<IParseNode>(x => x.GetRootParseNode(It.IsAny<string>(), It.IsAny<Stream>()))
-                .Returns(mockParseNode.Object);
+            var mockParseNodeFactory = new Mock<IAsyncParseNodeFactory>();
+            mockParseNodeFactory.Setup(x => x.GetRootParseNodeAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockParseNode.Object));
             var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
             var requestInfo = new RequestInformation
             {
@@ -529,7 +529,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                 var response = await adapter.SendPrimitiveAsync<Stream>(requestInfo, errorMapping);
                 Assert.Fail("Expected an ApiException to be thrown");
             }
-            catch (ApiException apiException)
+            catch(ApiException apiException)
             {
                 Assert.Equal((int)statusCode, apiException.ResponseStatusCode);
                 Assert.Contains("The server returned an unexpected status code and no error factory is registered for this code", apiException.Message);

@@ -441,8 +441,11 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             using var contentStream = await (response.Content?.ReadAsStreamAsync() ?? Task.FromResult(Stream.Null)).ConfigureAwait(false);
 #endif
             if(contentStream == Stream.Null || (contentStream.CanSeek && contentStream.Length == 0))
-                return null;// ensure a usefule stream is passed to the factory
-            var rootNode = pNodeFactory.GetRootParseNode(responseContentType!, contentStream);
+                return null;// ensure a useful stream is passed to the factory
+#pragma warning disable CS0618 // Type or member is obsolete
+            //TODO remove with v2
+            var rootNode = pNodeFactory is IAsyncParseNodeFactory asyncParseNodeFactory ? await asyncParseNodeFactory.GetRootParseNodeAsync(responseContentType!, contentStream, cancellationToken) : pNodeFactory.GetRootParseNode(responseContentType!, contentStream);
+#pragma warning restore CS0618 // Type or member is obsolete
             return rootNode;
         }
         private const string ClaimsKey = "claims";
@@ -538,7 +541,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 Method = new HttpMethod(requestInfo.HttpMethod.ToString().ToUpperInvariant()),
                 RequestUri = requestUri,
-                Version=new Version(2,0)
+                Version = new Version(2, 0)
             };
 
             if(requestInfo.RequestOptions.Any())
