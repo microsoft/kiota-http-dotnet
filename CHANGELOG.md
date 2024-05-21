@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `GetDefaultHandlerTypes` added to `KiotaClientFactory` if you're creating your own `HttpClient` and still want to use the default handlers.
+
 ## [1.4.1] - 2024-05-07
 
 ## Changed

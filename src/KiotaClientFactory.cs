@@ -51,7 +51,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         {
             return new List<DelegatingHandler>
             {
-                //add the default middlewares as they are ready
+                //add the default middlewares as they are ready, and add them to the list below as well
                 new UriReplacementHandler<UriReplacementHandlerOption>(),
                 new RetryHandler(),
                 new RedirectHandler(),
@@ -60,6 +60,25 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 new HeadersInspectionHandler(),
             };
         }
+
+        /// <summary>
+        /// Gets the default handler types.
+        /// </summary>
+        /// <returns>A list of all the default handlers</returns>
+        /// <remarks>Order matters</remarks>
+        public static IList<System.Type> GetDefaultHandlerTypes()
+        {
+            return new List<System.Type>
+            {
+                typeof(UriReplacementHandler<UriReplacementHandlerOption>),
+                typeof(RetryHandler),
+                typeof(RedirectHandler),
+                typeof(ParametersNameDecodingHandler),
+                typeof(UserAgentHandler),
+                typeof(HeadersInspectionHandler),
+            };
+        }
+
         /// <summary>
         /// Creates a <see cref="DelegatingHandler"/> to use for the <see cref="HttpClient" /> from the provided <see cref="DelegatingHandler"/> instances. Order matters.
         /// </summary>
@@ -81,7 +100,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 }
             }
             if(finalHandler != null)
-                handlers[handlers.Length-1].InnerHandler = finalHandler;
+                handlers[handlers.Length - 1].InnerHandler = finalHandler;
             return handlers[0];//first
         }
         /// <summary>
@@ -91,7 +110,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>The created <see cref="DelegatingHandler"/>.</returns>
         public static DelegatingHandler? ChainHandlersCollectionAndGetFirstLink(params DelegatingHandler[] handlers)
         {
-            return ChainHandlersCollectionAndGetFirstLink(null,handlers);
+            return ChainHandlersCollectionAndGetFirstLink(null, handlers);
         }
         /// <summary>
         /// Gets a default Http Client handler with the appropriate proxy configurations
