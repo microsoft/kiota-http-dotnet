@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added an optional parameter to kiota middleware factory so options can be configured directly. [#233](https://github.com/microsoft/kiota-http-dotnet/issues/233)
 - `GetDefaultHandlerTypes` added to `KiotaClientFactory` if you're creating your own `HttpClient` and still want to use the default handlers.
 
 ## [1.4.1] - 2024-05-07
