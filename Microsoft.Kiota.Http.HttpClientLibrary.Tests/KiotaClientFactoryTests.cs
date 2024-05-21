@@ -1,9 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using Castle.Components.DictionaryAdapter.Xml;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options;
 using Microsoft.Kiota.Http.HttpClientLibrary.Tests.Mocks;
@@ -112,21 +110,12 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
 
 
             // Act
-            var handlers = KiotaClientFactory.CreateDefaultHandlers(new[] { retryHandlerOption });
-
-            RetryHandler retryHandler = default;
-            foreach(var handler in handlers)
-            {
-                if(handler is RetryHandler retryFromDefault)
-                {
-                    retryHandler = retryFromDefault;
-                    break;
-                }
-            }
+            var handlers = KiotaClientFactory.CreateDefaultHandlers([retryHandlerOption]);
+            var retryHandler = handlers.OfType<RetryHandler>().FirstOrDefault();
 
             // Assert
             Assert.NotNull(retryHandler);
-            Assert.NotNull(retryHandler.RetryOption);
+            Assert.Equal(retryHandlerOption, retryHandler.RetryOption);
         }
 
         [Fact]
