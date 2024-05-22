@@ -35,20 +35,23 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>$(NoWarn);NU5048;NETSDK1138</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net5.0'))">
+  <PropertyGroup
+    Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net5.0'))">
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">
+  <PropertyGroup
+    Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)','net8.0'))">
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="1.8.3" />
+    <PackageReference Include="Microsoft.Kiota.Abstractions" Version="[1.9.1, 2.0.0)" />
   </ItemGroup>
 
   <!-- NET 5 target to be removed on next major version-->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0' or '$(TargetFramework)'== 'netStandard2.0' or '$(TargetFramework)' == 'netStandard2.1' or '$(TargetFramework)' == 'net462'">
+  <ItemGroup
+    Condition="'$(TargetFramework)' == 'net5.0' or '$(TargetFramework)'== 'netStandard2.0' or '$(TargetFramework)' == 'netStandard2.1' or '$(TargetFramework)' == 'net462'">
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="[6.0,9.0)" />
     <PackageReference Include="System.Text.Json" Version="[6.0,9.0)" />
   </ItemGroup>
@@ -56,7 +59,8 @@
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="[6.0,9.0)" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Kiota.Generated\KiotaGenerated.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Kiota.Generated\KiotaGenerated.csproj" OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(TF_BUILD)' == 'true'">
