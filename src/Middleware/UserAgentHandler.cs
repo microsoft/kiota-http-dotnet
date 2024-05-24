@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -31,23 +30,39 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 throw new ArgumentNullException(nameof(request));
 
             Activity? activity;
-            if (request.GetRequestOption<ObservabilityOptions>() is { } obsOptions) {
+            if(request.GetRequestOption<ObservabilityOptions>() is { } obsOptions)
+            {
                 var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
                 activity = activitySource?.StartActivity($"{nameof(UserAgentHandler)}_{nameof(SendAsync)}");
                 activity?.SetTag("com.microsoft.kiota.handler.useragent.enable", true);
-            } else {
+            }
+            else
+            {
                 activity = null;
             }
-            try {
+
+            try
+            {
                 var userAgentHandlerOption = request.GetRequestOption<UserAgentHandlerOption>() ?? _userAgentOption;
 
-                if(userAgentHandlerOption.Enabled &&
-                    !request.Headers.UserAgent.Any(x => userAgentHandlerOption.ProductName.Equals(x.Product?.Name, StringComparison.OrdinalIgnoreCase)))
+                bool isProductNamePresent = false;
+                foreach(var userAgent in request.Headers.UserAgent)
+                {
+                    if(userAgentHandlerOption.ProductName.Equals(userAgent.Product?.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isProductNamePresent = true;
+                        break;
+                    }
+                }
+
+                if(userAgentHandlerOption.Enabled && !isProductNamePresent)
                 {
                     request.Headers.UserAgent.Add(new ProductInfoHeaderValue(userAgentHandlerOption.ProductName, userAgentHandlerOption.ProductVersion));
                 }
                 return base.SendAsync(request, cancellationToken);
-            } finally {
+            }
+            finally
+            {
                 activity?.Dispose();
             }
         }

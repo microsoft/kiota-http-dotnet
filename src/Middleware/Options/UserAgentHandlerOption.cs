@@ -2,9 +2,6 @@
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using Microsoft.Kiota.Abstractions;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware.Options

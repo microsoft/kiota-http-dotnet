@@ -2,7 +2,7 @@
 //  Copyright (c) Microsoft Corporation.  All Rights Reserved.  Licensed under the MIT License.  See License in the project root for license information.
 // ------------------------------------------------------------------------------
 
-using System.Linq;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -26,8 +26,17 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>The <see cref="HttpClient"/> with the default middlewares.</returns>
         public static HttpClient Create(HttpMessageHandler? finalHandler = null, IRequestOption[]? optionsForHandlers = null)
         {
-            var defaultHandlers = CreateDefaultHandlers(optionsForHandlers);
-            var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), defaultHandlers.ToArray());
+            var defaultHandlersEnumerable = CreateDefaultHandlers(optionsForHandlers);
+            int count = 0;
+            foreach(var _ in defaultHandlersEnumerable) count++;
+
+            var defaultHandlersArray = new DelegatingHandler[count];
+            int index = 0;
+            foreach(var handler2 in defaultHandlersEnumerable)
+            {
+                defaultHandlersArray[index++] = handler2;
+            }
+            var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), defaultHandlersArray);
             return handler != null ? new HttpClient(handler) : new HttpClient();
         }
 
@@ -39,9 +48,16 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>The <see cref="HttpClient"/> with the custom handlers.</returns>
         public static HttpClient Create(IList<DelegatingHandler> handlers, HttpMessageHandler? finalHandler = null)
         {
-            if(handlers == null || !handlers.Any())
+            if(handlers == null || handlers.Count == 0)
                 return Create(finalHandler);
-            var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), handlers.ToArray());
+
+            DelegatingHandler[] handlersArray = new DelegatingHandler[handlers.Count];
+            for(int i = 0; i < handlers.Count; i++)
+            {
+                handlersArray[i] = handlers[i];
+            }
+
+            var handler = ChainHandlersCollectionAndGetFirstLink(finalHandler ?? GetDefaultHttpMessageHandler(), handlersArray);
             return handler != null ? new HttpClient(handler) : new HttpClient();
         }
 
@@ -51,35 +67,39 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>A list of the default handlers used by the client.</returns>
         public static IList<DelegatingHandler> CreateDefaultHandlers(IRequestOption[]? optionsForHandlers = null)
         {
-            optionsForHandlers ??= [];
+            optionsForHandlers ??= Array.Empty<IRequestOption>();
+
+            UriReplacementHandlerOption? uriReplacementOption = null;
+            RetryHandlerOption? retryHandlerOption = null;
+            RedirectHandlerOption? redirectHandlerOption = null;
+            ParametersNameDecodingOption? parametersNameDecodingOption = null;
+            UserAgentHandlerOption? userAgentHandlerOption = null;
+            HeadersInspectionHandlerOption? headersInspectionHandlerOption = null;
+
+            foreach(var option in optionsForHandlers)
+            {
+                if(uriReplacementOption == null && option is UriReplacementHandlerOption uriOption)
+                    uriReplacementOption = uriOption;
+                else if(retryHandlerOption == null && option is RetryHandlerOption retryOption)
+                    retryHandlerOption = retryOption;
+                else if(redirectHandlerOption == null && option is RedirectHandlerOption redirectOption)
+                    redirectHandlerOption = redirectOption;
+                else if(parametersNameDecodingOption == null && option is ParametersNameDecodingOption parametersOption)
+                    parametersNameDecodingOption = parametersOption;
+                else if(userAgentHandlerOption == null && option is UserAgentHandlerOption userAgentOption)
+                    userAgentHandlerOption = userAgentOption;
+                else if(headersInspectionHandlerOption == null && option is HeadersInspectionHandlerOption headersOption)
+                    headersInspectionHandlerOption = headersOption;
+            }
 
             return new List<DelegatingHandler>
             {
-                //add the default middlewares as they are ready, and add them to the list below as well
-                
-                optionsForHandlers.OfType<UriReplacementHandlerOption>().FirstOrDefault() is UriReplacementHandlerOption uriReplacementOption
-                ? new UriReplacementHandler<UriReplacementHandlerOption>(uriReplacementOption)
-                : new UriReplacementHandler<UriReplacementHandlerOption>(),
-
-                optionsForHandlers.OfType<RetryHandlerOption>().FirstOrDefault() is RetryHandlerOption retryHandlerOption
-                ? new RetryHandler(retryHandlerOption)
-                : new RetryHandler(),
-
-                optionsForHandlers.OfType<RedirectHandlerOption>().FirstOrDefault() is RedirectHandlerOption redirectHandlerOption
-                ? new RedirectHandler(redirectHandlerOption)
-                : new RedirectHandler(),
-
-                optionsForHandlers.OfType<ParametersNameDecodingOption>().FirstOrDefault() is ParametersNameDecodingOption parametersNameDecodingOption
-                ? new ParametersNameDecodingHandler(parametersNameDecodingOption)
-                : new ParametersNameDecodingHandler(),
-
-                optionsForHandlers.OfType<UserAgentHandlerOption>().FirstOrDefault() is UserAgentHandlerOption userAgentHandlerOption
-                ? new UserAgentHandler(userAgentHandlerOption)
-                : new UserAgentHandler(),
-
-                optionsForHandlers.OfType<HeadersInspectionHandlerOption>().FirstOrDefault() is HeadersInspectionHandlerOption headersInspectionHandlerOption
-                ? new HeadersInspectionHandler(headersInspectionHandlerOption)
-                : new HeadersInspectionHandler(),
+                uriReplacementOption != null ? new UriReplacementHandler<UriReplacementHandlerOption>(uriReplacementOption) : new UriReplacementHandler<UriReplacementHandlerOption>(),
+                retryHandlerOption != null ? new RetryHandler(retryHandlerOption) : new RetryHandler(),
+                redirectHandlerOption != null ? new RedirectHandler(redirectHandlerOption) : new RedirectHandler(),
+                parametersNameDecodingOption != null ? new ParametersNameDecodingHandler(parametersNameDecodingOption) : new ParametersNameDecodingHandler(),
+                userAgentHandlerOption != null ? new UserAgentHandler(userAgentHandlerOption) : new UserAgentHandler(),
+                headersInspectionHandlerOption != null ? new HeadersInspectionHandler(headersInspectionHandlerOption) : new HeadersInspectionHandler(),
             };
         }
 
@@ -109,7 +129,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
         /// <returns>The created <see cref="DelegatingHandler"/>.</returns>
         public static DelegatingHandler? ChainHandlersCollectionAndGetFirstLink(HttpMessageHandler? finalHandler, params DelegatingHandler[] handlers)
         {
-            if(handlers == null || !handlers.Any()) return default;
+            if(handlers == null || handlers.Length == 0) return default;
             var handlersCount = handlers.Length;
             for(var i = 0; i < handlersCount; i++)
             {

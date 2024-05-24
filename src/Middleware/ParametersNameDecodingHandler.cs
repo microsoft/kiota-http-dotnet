@@ -3,8 +3,8 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,12 +16,15 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 /// <summary>
 /// This handlers decodes special characters in the request query parameters that had to be encoded due to RFC 6570 restrictions names before executing the request.
 /// </summary>
-public class ParametersNameDecodingHandler: DelegatingHandler
+public class ParametersNameDecodingHandler : DelegatingHandler
 {
     /// <summary>
     /// The options to use when decoding parameters names in URLs
     /// </summary>
-    internal ParametersNameDecodingOption EncodingOptions { get; set; }
+    internal ParametersNameDecodingOption EncodingOptions
+    {
+        get; set;
+    }
     /// <summary>
     /// Constructs a new <see cref="ParametersNameDecodingHandler"/>
     /// </summary>
@@ -30,22 +33,28 @@ public class ParametersNameDecodingHandler: DelegatingHandler
     {
         EncodingOptions = options ?? new();
     }
+
+
     ///<inheritdoc/>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var options = request.GetRequestOption<ParametersNameDecodingOption>() ?? EncodingOptions;
         Activity? activity;
-        if (request.GetRequestOption<ObservabilityOptions>() is { } obsOptions) {
+        if(request.GetRequestOption<ObservabilityOptions>() is { } obsOptions)
+        {
             var activitySource = ActivitySourceRegistry.DefaultInstance.GetOrCreateActivitySource(obsOptions.TracerInstrumentationName);
             activity = activitySource.StartActivity($"{nameof(ParametersNameDecodingHandler)}_{nameof(SendAsync)}");
             activity?.SetTag("com.microsoft.kiota.handler.parameters_name_decoding.enable", true);
-        } else {
+        }
+        else
+        {
             activity = null;
         }
-        try {
-            if(!request.RequestUri!.Query.Contains('%') ||
+        try
+        {
+            if(!request.RequestUri!.Query.Contains("%") ||
                 !options.Enabled ||
-                !(options.ParametersToDecode?.Any() ?? false))
+                options.ParametersToDecode == null || options.ParametersToDecode.Count == 0)
             {
                 return base.SendAsync(request, cancellationToken);
             }
@@ -55,26 +64,51 @@ public class ParametersNameDecodingHandler: DelegatingHandler
             var decodedUri = new UriBuilder(originalUri.Scheme, originalUri.Host, originalUri.Port, originalUri.AbsolutePath, query).Uri;
             request.RequestUri = decodedUri;
             return base.SendAsync(request, cancellationToken);
-        } finally {
+        }
+        finally
+        {
             activity?.Dispose();
         }
     }
-    internal static string? DecodeUriEncodedString(string? original, char[] charactersToDecode) {
-        if (string.IsNullOrEmpty(original) || !(charactersToDecode?.Any() ?? false))
-            return original;
-        var symbolsToReplace = charactersToDecode.Select(static x => ($"%{Convert.ToInt32(x):X}", x.ToString())).Where(x => original!.Contains(x.Item1)).ToArray();
 
-        var encodedParameterValues = original!.TrimStart('?')
-            .Split(new []{'&'}, StringSplitOptions.RemoveEmptyEntries)
-            .Select(static part => part.Split(new []{'='}, StringSplitOptions.RemoveEmptyEntries)[0])
-            .Where(static x => x.Contains('%'))// only pull out params with `%` (encoded)
-            .ToArray();
+    internal static string? DecodeUriEncodedString(string? original, char[] charactersToDecode)
+    {
+        if(string.IsNullOrEmpty(original) || charactersToDecode == null || charactersToDecode.Length == 0)
+            return original;
+
+        var symbolsToReplace = new List<(string, string)>();
+        foreach(var character in charactersToDecode)
+        {
+            var symbol = ($"%{Convert.ToInt32(character):X}", character.ToString());
+            if(original?.Contains(symbol.Item1) ?? false)
+            {
+                symbolsToReplace.Add(symbol);
+            }
+        }
+
+        var encodedParameterValues = new List<string>();
+        var parts = original?.TrimStart('?').Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
+        if(parts is null) return original;
+        foreach(var part in parts)
+        {
+            var parameter = part.Split(new[] { '=' }, StringSplitOptions.RemoveEmptyEntries)[0];
+            if(parameter.Contains("%")) // only pull out params with `%` (encoded)
+            {
+                encodedParameterValues.Add(parameter);
+            }
+        }
 
         foreach(var parameter in encodedParameterValues)
         {
-            var updatedParameterName = symbolsToReplace.Where(x => parameter!.Contains(x.Item1))
-                .Aggregate(parameter, (current, symbolToReplace) => current!.Replace(symbolToReplace.Item1, symbolToReplace.Item2));
-            original = original.Replace(parameter, updatedParameterName);
+            var updatedParameterName = parameter;
+            foreach(var symbolToReplace in symbolsToReplace)
+            {
+                if(parameter.Contains(symbolToReplace.Item1))
+                {
+                    updatedParameterName = updatedParameterName.Replace(symbolToReplace.Item1, symbolToReplace.Item2);
+                }
+            }
+            original = original?.Replace(parameter, updatedParameterName);
         }
 
         return original;
