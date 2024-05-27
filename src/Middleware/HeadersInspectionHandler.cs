@@ -81,7 +81,7 @@ public class HeadersInspectionHandler : DelegatingHandler
             activity?.Dispose();
         }
 
-        string[] ConvertHeaderValuesToArray(IEnumerable<string> headerValues)
+        static string[] ConvertHeaderValuesToArray(IEnumerable<string> headerValues)
         {
             var headerValuesList = new List<string>();
             foreach(var value in headerValues)
