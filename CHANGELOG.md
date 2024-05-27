@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Unreleased]
+
+## [1.4.3] - 2024-05-24
+
+### Changed
+
+- Remove all LINQ usage from product code
+
 ## [1.4.2] - 2024-05-21
 
 ### Added

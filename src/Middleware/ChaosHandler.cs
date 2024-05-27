@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -103,7 +102,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
 
         private void LoadKnownFailures(List<HttpResponseMessage>? knownFailures)
         {
-            if(knownFailures?.Any() ?? false)
+            if(knownFailures?.Count > 0)
             {
                 _knownFailures = knownFailures;
             }

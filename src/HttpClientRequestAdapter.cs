@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Kiota.Abstractions;
@@ -388,7 +387,9 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
 
             var statusCodeAsInt = (int)response.StatusCode;
             var statusCodeAsString = statusCodeAsInt.ToString();
-            var responseHeadersDictionary = response.Headers.ToDictionary(x => x.Key, y => y.Value, StringComparer.OrdinalIgnoreCase);
+            var responseHeadersDictionary = new Dictionary<string, IEnumerable<string>>(StringComparer.OrdinalIgnoreCase);
+			foreach (var header in response.Headers)
+    			responseHeadersDictionary[header.Key] = header.Value;
             ParsableFactory<IParsable>? errorFactory;
             if(errorMapping == null ||
                 !errorMapping.TryGetValue(statusCodeAsString, out errorFactory) &&
@@ -470,51 +471,86 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 var ex = new InvalidOperationException("Could not get a response after calling the service");
                 throw ex;
             }
-            if(response.Headers.TryGetValues("Content-Length", out var contentLengthValues) &&
-                contentLengthValues.Any() &&
-                contentLengthValues.First() is string firstContentLengthValue &&
-                int.TryParse(firstContentLengthValue, out var contentLength))
+            if(response.Headers.TryGetValues("Content-Length", out var contentLengthValues))
             {
-                activityForAttributes?.SetTag("http.response_content_length", contentLength);
+                using var contentLengthEnumerator = contentLengthValues.GetEnumerator();
+                if(contentLengthEnumerator.MoveNext() && int.TryParse(contentLengthEnumerator.Current, out var contentLength))
+                {
+                    activityForAttributes?.SetTag("http.response_content_length", contentLength);
+                }
             }
-            if(response.Headers.TryGetValues("Content-Type", out var contentTypeValues) &&
-                contentTypeValues.Any() &&
-                contentTypeValues.First() is string firstContentTypeValue)
+            if(response.Headers.TryGetValues("Content-Type", out var contentTypeValues))
             {
-                activityForAttributes?.SetTag("http.response_content_type", firstContentTypeValue);
+                using var contentTypeEnumerator = contentTypeValues.GetEnumerator();
+                if(contentTypeEnumerator.MoveNext())
+                {
+                    activityForAttributes?.SetTag("http.response_content_type", contentTypeEnumerator.Current);
+                }
             }
             activityForAttributes?.SetTag("http.status_code", (int)response.StatusCode);
             activityForAttributes?.SetTag("http.flavor", $"{response.Version.Major}.{response.Version.Minor}");
 
             return await RetryCAEResponseIfRequired(response, requestInfo, cancellationToken, claims, activityForAttributes).ConfigureAwait(false);
         }
+
         private static readonly Regex caeValueRegex = new("\"([^\"]*)\"", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
+
         /// <summary>
         /// The key for the event raised by tracing when an authentication challenge is received
         /// </summary>
         public const string AuthenticateChallengedEventKey = "com.microsoft.kiota.authenticate_challenge_received";
+
         private async Task<HttpResponseMessage> RetryCAEResponseIfRequired(HttpResponseMessage response, RequestInformation requestInfo, CancellationToken cancellationToken, string? claims, Activity? activityForAttributes)
         {
             using var span = activitySource?.StartActivity(nameof(RetryCAEResponseIfRequired));
             if(response.StatusCode == HttpStatusCode.Unauthorized &&
                 string.IsNullOrEmpty(claims) && // avoid infinite loop, we only retry once
-                (requestInfo.Content?.CanSeek ?? true) &&
-                response.Headers.WwwAuthenticate?.FirstOrDefault(filterAuthHeader) is AuthenticationHeaderValue authHeader &&
-                authHeader.Parameter?.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                                .Select(static x => x.Trim())
-                                                .FirstOrDefault(static x => x.StartsWith(ClaimsKey, StringComparison.OrdinalIgnoreCase)) is string rawResponseClaims &&
-                    caeValueRegex.Match(rawResponseClaims) is Match claimsMatch &&
-                    claimsMatch.Groups.Count > 1 &&
-                    claimsMatch.Groups[1].Value is string responseClaims)
+                (requestInfo.Content?.CanSeek ?? true))
             {
-                span?.AddEvent(new ActivityEvent(AuthenticateChallengedEventKey));
-                activityForAttributes?.SetTag("http.retry_count", 1);
-                requestInfo.Content?.Seek(0, SeekOrigin.Begin);
-                await DrainAsync(response, cancellationToken).ConfigureAwait(false);
-                return await GetHttpResponseMessage(requestInfo, cancellationToken, activityForAttributes, responseClaims).ConfigureAwait(false);
+                AuthenticationHeaderValue? authHeader = null;
+                foreach(var header in response.Headers.WwwAuthenticate)
+                {
+                    if(filterAuthHeader(header))
+                    {
+                        authHeader = header;
+                        break;
+                    }
+                }
+
+                if(authHeader is not null)
+                {
+                    var authHeaderParameters = authHeader.Parameter?.Split(new[]{','}, StringSplitOptions.RemoveEmptyEntries);
+
+                    string? rawResponseClaims = null;
+                    if(authHeaderParameters != null)
+                    {
+                        foreach(var parameter in authHeaderParameters)
+                        {
+                            var trimmedParameter = parameter.Trim();
+                            if(trimmedParameter.StartsWith(ClaimsKey, StringComparison.OrdinalIgnoreCase))
+                            {
+                                rawResponseClaims = trimmedParameter;
+                                break;
+                            }
+                        }
+                    }
+
+                    if(rawResponseClaims != null &&
+                        caeValueRegex.Match(rawResponseClaims) is Match claimsMatch &&
+                        claimsMatch.Groups.Count > 1 &&
+                        claimsMatch.Groups[1].Value is string responseClaims)
+                    {
+                        span?.AddEvent(new ActivityEvent(AuthenticateChallengedEventKey));
+                        activityForAttributes?.SetTag("http.retry_count", 1);
+                        requestInfo.Content?.Seek(0, SeekOrigin.Begin);
+                        await DrainAsync(response, cancellationToken).ConfigureAwait(false);
+                        return await GetHttpResponseMessage(requestInfo, cancellationToken, activityForAttributes, responseClaims).ConfigureAwait(false);
+                    }
+                }
             }
             return response;
         }
+
         private void SetBaseUrlForRequestInformation(RequestInformation requestInfo)
         {
             IDictionaryExtensions.AddOrReplace(requestInfo.PathParameters, "baseurl", BaseUrl!);
@@ -527,6 +563,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 return result;
             else throw new InvalidOperationException($"Could not convert the request information to a {typeof(T).Name}");
         }
+
         private HttpRequestMessage GetRequestMessageFromRequestInformation(RequestInformation requestInfo, Activity? activityForAttributes)
         {
             using var span = activitySource?.StartActivity(nameof(GetRequestMessageFromRequestInformation));
@@ -544,37 +581,42 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                 Version = new Version(2, 0)
             };
 
-            if(requestInfo.RequestOptions.Any())
+            if(requestInfo.RequestOptions != null)
 #if NET5_0_OR_GREATER
             {
-                requestInfo.RequestOptions.ToList().ForEach(x => message.Options.Set(new HttpRequestOptionsKey<IRequestOption>(x.GetType().FullName!), x));
+                foreach (var option in requestInfo.RequestOptions)
+                    message.Options.Set(new HttpRequestOptionsKey<IRequestOption>(option.GetType().FullName!), option);
             }
             message.Options.Set(new HttpRequestOptionsKey<IRequestOption>(typeof(ObservabilityOptions).FullName!), obsOptions);
 #else
             {
-                requestInfo.RequestOptions.ToList().ForEach(x => IDictionaryExtensions.TryAdd(message.Properties, x.GetType().FullName!, x));
+                foreach(var option in requestInfo.RequestOptions)
+                    IDictionaryExtensions.TryAdd(message.Properties, option.GetType().FullName!, option);
             }
             IDictionaryExtensions.TryAdd(message.Properties!, typeof(ObservabilityOptions).FullName, obsOptions);
 #endif
 
             if(requestInfo.Content != null && requestInfo.Content != Stream.Null)
                 message.Content = new StreamContent(requestInfo.Content);
-            if(requestInfo.Headers?.Any() ?? false)
+            if(requestInfo.Headers != null)
                 foreach(var header in requestInfo.Headers)
                     if(!message.Headers.TryAddWithoutValidation(header.Key, header.Value) && message.Content != null)
                         message.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);// Try to add the headers we couldn't add to the HttpRequestMessage before to the HttpContent
 
             if(message.Content != null)
             {
-                if(message.Content.Headers.TryGetValues("Content-Length", out var contentLenValues) &&
-                    contentLenValues.Any() &&
-                    contentLenValues.First() is string contentLenValue &&
-                    int.TryParse(contentLenValue, out var contentLenValueInt))
-                    activityForAttributes?.SetTag("http.request_content_length", contentLenValueInt);
-                if(message.Content.Headers.TryGetValues("Content-Type", out var contentTypeValues) &&
-                    contentTypeValues.Any() &&
-                    contentTypeValues.First() is string contentTypeValue)
-                    activityForAttributes?.SetTag("http.request_content_type", contentTypeValue);
+                if(message.Content.Headers.TryGetValues("Content-Length", out var contentLenValues))
+                {
+                    var contentLenEnumerator = contentLenValues.GetEnumerator();
+                    if(contentLenEnumerator.MoveNext() && int.TryParse(contentLenEnumerator.Current, out var contentLenValueInt))
+                        activityForAttributes?.SetTag("http.request_content_length", contentLenValueInt);
+                }
+                if(message.Content.Headers.TryGetValues("Content-Type", out var contentTypeValues))
+                {
+                    var contentTypeEnumerator = contentTypeValues.GetEnumerator();
+                    if(contentTypeEnumerator.MoveNext())
+                        activityForAttributes?.SetTag("http.request_content_type", contentTypeEnumerator.Current);
+                }
             }
             return message;
         }

@@ -5,9 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -183,7 +181,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
             delayInSeconds = delay;
             if(response.Headers.TryGetValues(RetryAfter, out IEnumerable<string>? values))
             {
-                string retryAfter = values.First();
+                using IEnumerator<string> v = values.GetEnumerator();
+                string retryAfter = v.MoveNext() ? v.Current : throw new InvalidOperationException("Retry-After header is empty.");
                 // the delay could be in the form of a seconds or a http date. See https://httpwg.org/specs/rfc7231.html#header.retry-after
                 if(int.TryParse(retryAfter, out int delaySeconds))
                 {
@@ -244,10 +243,16 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware
                 errorMessage = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             }
 
+            var headersDictionary = new Dictionary<string, IEnumerable<string>>();
+            foreach(var header in response.Headers)
+            {
+                headersDictionary.Add(header.Key, header.Value);
+            }
+
             return new ApiException($"HTTP request failed with status code: {response.StatusCode}.{errorMessage}")
             {
                 ResponseStatusCode = (int)response.StatusCode,
-                ResponseHeaders = response.Headers.ToDictionary(header => header.Key, header => header.Value),
+                ResponseHeaders = headersDictionary,
             };
         }
     }

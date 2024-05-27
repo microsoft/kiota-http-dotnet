@@ -3,8 +3,8 @@
 // ------------------------------------------------------------------------------
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +19,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 public class HeadersInspectionHandler : DelegatingHandler
 {
     private readonly HeadersInspectionHandlerOption _defaultOptions;
+
     /// <summary>
     /// Create a new instance of <see cref="HeadersInspectionHandler"/>
     /// </summary>
@@ -27,6 +28,7 @@ public class HeadersInspectionHandler : DelegatingHandler
     {
         _defaultOptions = defaultOptions ?? new HeadersInspectionHandlerOption();
     }
+
     /// <inheritdoc/>
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
@@ -51,12 +53,12 @@ public class HeadersInspectionHandler : DelegatingHandler
             {
                 foreach(var header in request.Headers)
                 {
-                    options.RequestHeaders[header.Key] = header.Value.ToArray();
+                    options.RequestHeaders[header.Key] = ConvertHeaderValuesToArray(header.Value);
                 }
                 if(request.Content != null)
                     foreach(var contentHeaders in request.Content.Headers)
                     {
-                        options.RequestHeaders[contentHeaders.Key] = contentHeaders.Value.ToArray();
+                        options.RequestHeaders[contentHeaders.Key] = ConvertHeaderValuesToArray(contentHeaders.Value);
                     }
             }
             var response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -64,12 +66,12 @@ public class HeadersInspectionHandler : DelegatingHandler
             {
                 foreach(var header in response.Headers)
                 {
-                    options.ResponseHeaders[header.Key] = header.Value.ToArray();
+                    options.ResponseHeaders[header.Key] = ConvertHeaderValuesToArray(header.Value);
                 }
                 if(response.Content != null)
                     foreach(var contentHeaders in response.Content.Headers)
                     {
-                        options.ResponseHeaders[contentHeaders.Key] = contentHeaders.Value.ToArray();
+                        options.ResponseHeaders[contentHeaders.Key] = ConvertHeaderValuesToArray(contentHeaders.Value);
                     }
             }
             return response;
@@ -79,6 +81,14 @@ public class HeadersInspectionHandler : DelegatingHandler
             activity?.Dispose();
         }
 
+        static string[] ConvertHeaderValuesToArray(IEnumerable<string> headerValues)
+        {
+            var headerValuesList = new List<string>();
+            foreach(var value in headerValues)
+            {
+                headerValuesList.Add(value);
+            }
+            return headerValuesList.ToArray();
+        }
     }
-
 }
