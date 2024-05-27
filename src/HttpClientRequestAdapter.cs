@@ -388,6 +388,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             var statusCodeAsInt = (int)response.StatusCode;
             var statusCodeAsString = statusCodeAsInt.ToString();
             var responseHeadersDictionary = new Dictionary<string, IEnumerable<string>>(StringComparer.OrdinalIgnoreCase);
+			foreach (var header in response.Headers)
+    			responseHeadersDictionary[header.Key] = header.Value;
             ParsableFactory<IParsable>? errorFactory;
             if(errorMapping == null ||
                 !errorMapping.TryGetValue(statusCodeAsString, out errorFactory) &&
