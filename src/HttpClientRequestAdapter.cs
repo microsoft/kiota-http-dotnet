@@ -519,7 +519,8 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
 
                 if(authHeader is not null)
                 {
-                    var authHeaderParameters = authHeader.Parameter?.Split([','], StringSplitOptions.RemoveEmptyEntries);
+                    var authHeaderParameters = authHeader.Parameter?.Split(new[]{','}, StringSplitOptions.RemoveEmptyEntries);
+
                     string? rawResponseClaims = null;
                     if(authHeaderParameters != null)
                     {
