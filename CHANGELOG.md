@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.4] - 2024-06-21
+
+### Changed
+
+- Fixes handling enums by `SendPrimitiveAsync`
+
 ## [1.4.3] - 2024-05-24
 
 ### Changed

@@ -535,5 +535,75 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
                 Assert.Contains("The server returned an unexpected status code and no error factory is registered for this code", apiException.Message);
             }
         }
+
+        [Fact]
+        public async Task SendMethodHandleEnumIfValueIsString()
+        {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("Value1")
+                });
+
+            var mockParseNode = new Mock<IParseNode>();
+            mockParseNode.Setup(x => x.GetStringValue())
+            .Returns("Value1");
+
+            var mockParseNodeFactory = new Mock<IAsyncParseNodeFactory>();
+            mockParseNodeFactory.Setup(x => x.GetRootParseNodeAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockParseNode.Object));
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri("https://example.com")
+            };
+
+            var response = await adapter.SendPrimitiveAsync<TestEnum?>(requestInfo);
+
+            Assert.Equal(TestEnum.Value1, response);
+        }
+
+        [Fact]
+        public async Task SendMethodHandleEnumIfValueIsInteger()
+        {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("1")
+                });
+
+            var mockParseNode = new Mock<IParseNode>();
+            mockParseNode.Setup(x => x.GetStringValue())
+            .Returns("1");
+
+            var mockParseNodeFactory = new Mock<IAsyncParseNodeFactory>();
+            mockParseNodeFactory.Setup(x => x.GetRootParseNodeAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockParseNode.Object));
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri("https://example.com")
+            };
+
+            var response = await adapter.SendPrimitiveAsync<TestEnum?>(requestInfo);
+
+            Assert.Equal(TestEnum.Value2, response);
+        }
+    }
+
+    public enum TestEnum
+    {
+        Value1,
+        Value2
     }
 }

@@ -293,7 +293,19 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                         {
                             result = rootNode.GetDateValue();
                         }
-                        else throw new InvalidOperationException("error handling the response, unexpected type");
+                        else
+                        {
+                            var underlyingType = Nullable.GetUnderlyingType(modelType);
+                            if(underlyingType != null && underlyingType.IsEnum)
+                            {
+                                var rawValue = rootNode.GetStringValue();
+                                result = Enum.Parse(underlyingType, rawValue!, true);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException("error handling the response, unexpected type");
+                            }
+                        }
                         SetResponseType(result, span);
                         return (ModelType)result!;
                     }
