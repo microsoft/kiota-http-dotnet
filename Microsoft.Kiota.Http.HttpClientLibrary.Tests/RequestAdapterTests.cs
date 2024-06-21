@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -599,11 +600,47 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
 
             Assert.Equal(TestEnum.Value2, response);
         }
+
+        [Fact]
+        public async Task SendMethodHandleEnumIfValueIsFromEnumMember()
+        {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("Value__3")
+                });
+
+            var mockParseNode = new Mock<IParseNode>();
+            mockParseNode.Setup(x => x.GetStringValue())
+            .Returns("Value__3");
+
+            var mockParseNodeFactory = new Mock<IAsyncParseNodeFactory>();
+            mockParseNodeFactory.Setup(x => x.GetRootParseNodeAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockParseNode.Object));
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri("https://example.com")
+            };
+
+            var response = await adapter.SendPrimitiveAsync<TestEnum?>(requestInfo);
+
+            Assert.Equal(TestEnum.Value3, response);
+        }
     }
 
     public enum TestEnum
     {
+        [EnumMember(Value = "Value__1")]
         Value1,
-        Value2
+        [EnumMember(Value = "Value__2")]
+        Value2,
+        [EnumMember(Value = "Value__3")]
+        Value3
     }
 }

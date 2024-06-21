@@ -18,6 +18,8 @@ using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
+using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -293,18 +295,22 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                         {
                             result = rootNode.GetDateValue();
                         }
+                        else if(
+                            Nullable.GetUnderlyingType(modelType) is { IsEnum: true } underlyingType &&
+                            rootNode.GetStringValue() is { Length: > 0 } rawValue)
+                        {
+                            foreach(var field in underlyingType.GetFields())
+                            {
+                                if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && rawValue.Equals(attr.Value, StringComparison.Ordinal))
+                                {
+                                    rawValue = field.Name;
+                                }
+                            }
+                            result = Enum.Parse(underlyingType, rawValue, true);
+                        }
                         else
                         {
-                            var underlyingType = Nullable.GetUnderlyingType(modelType);
-                            if(underlyingType != null && underlyingType.IsEnum)
-                            {
-                                var rawValue = rootNode.GetStringValue();
-                                result = Enum.Parse(underlyingType, rawValue!, true);
-                            }
-                            else
-                            {
-                                throw new InvalidOperationException("error handling the response, unexpected type");
-                            }
+                            throw new InvalidOperationException("error handling the response, unexpected type");
                         }
                         SetResponseType(result, span);
                         return (ModelType)result!;
