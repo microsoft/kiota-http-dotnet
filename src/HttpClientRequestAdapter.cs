@@ -304,6 +304,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                                 if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && rawValue.Equals(attr.Value, StringComparison.Ordinal))
                                 {
                                     rawValue = field.Name;
+                                    break;
                                 }
                             }
                             result = Enum.Parse(underlyingType, rawValue, true);
