@@ -20,6 +20,7 @@ using System.Diagnostics;
 using Microsoft.Kiota.Http.HttpClientLibrary.Middleware;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Kiota.Http.HttpClientLibrary
 {
@@ -299,61 +300,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                             Nullable.GetUnderlyingType(modelType) is { IsEnum: true } underlyingType &&
                             rootNode.GetStringValue() is { Length: > 0 } rawValue)
                         {
-                            if(underlyingType.IsDefined(typeof(FlagsAttribute)))
-                            {
-                                int intValue = 0;
-                                while(rawValue.Length > 0)
-                                {
-                                    int commaIndex = rawValue.IndexOf(',');
-                                    var valueName = commaIndex < 0 ? rawValue : rawValue.Substring(0, commaIndex);
-                                    foreach(var field in underlyingType.GetFields())
-                                    {
-                                        if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && valueName.Equals(attr.Value, StringComparison.Ordinal))
-                                        {
-                                            valueName = field.Name;
-                                            break;
-                                        }
-                                    }
-#if NET5_0_OR_GREATER
-                                    if(Enum.TryParse(underlyingType, valueName, true, out var enumPartResult))
-                                        intValue |= (int)enumPartResult!;
-#else
-                                    try
-                                    {
-                                        intValue |= (int)Enum.Parse(underlyingType, valueName, true);
-                                    }
-                                    catch { }
-#endif
-
-                                    rawValue = commaIndex < 0 ? string.Empty : rawValue.Substring(commaIndex + 1);
-                                }
-                                result = intValue > 0 ? Enum.Parse(underlyingType, intValue.ToString(), true) : null;
-                            }
-                            else
-                            {
-                                foreach(var field in underlyingType.GetFields())
-                                {
-                                    if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && rawValue.Equals(attr.Value, StringComparison.Ordinal))
-                                    {
-                                        rawValue = field.Name;
-                                        break;
-                                    }
-                                }
-
-#if NET5_0_OR_GREATER
-                                Enum.TryParse(underlyingType, rawValue, true, out object? enumResult);
-                                result = enumResult;
-#else
-                                try
-                                {
-                                    result = Enum.Parse(underlyingType, rawValue, true);
-                                }
-                                catch
-                                {
-                                    result = null;
-                                }
-#endif
-                            }
+                            result = GetEnumValue(underlyingType, rawValue);
                         }
                         else
                         {
@@ -375,6 +322,80 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
             {
                 span?.AddEvent(new ActivityEvent(EventResponseHandlerInvokedKey));
                 return await responseHandler.HandleResponseAsync<HttpResponseMessage, ModelType>(response, errorMapping).ConfigureAwait(false);
+            }
+        }
+#if NET5_0_OR_GREATER
+        private static object? GetEnumValue([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] Type? underlyingType, string rawValue)
+#else
+        private static object? GetEnumValue(Type? underlyingType, string rawValue)
+#endif
+        {
+            object? result;
+            if(underlyingType == null)
+            {
+                return null;
+            }
+            if(underlyingType.IsDefined(typeof(FlagsAttribute)))
+            {
+                int intValue = 0;
+                while(rawValue.Length > 0)
+                {
+                    int commaIndex = rawValue.IndexOf(',');
+                    var valueName = commaIndex < 0 ? rawValue : rawValue.Substring(0, commaIndex);
+                    if(TryGetFieldValueName(valueName, out var value))
+                    {
+                        valueName = value;
+                    }
+#if NET5_0_OR_GREATER
+                    if(Enum.TryParse(underlyingType, valueName, true, out var enumPartResult))
+                        intValue |= (int)enumPartResult!;
+#else
+                    try
+                    {
+                        intValue |= (int)Enum.Parse(underlyingType, valueName, true);
+                    }
+                    catch { }
+#endif
+
+                    rawValue = commaIndex < 0 ? string.Empty : rawValue.Substring(commaIndex + 1);
+                }
+                result = intValue > 0 ? Enum.Parse(underlyingType, intValue.ToString(), true) : null;
+            }
+            else
+            {
+                if(TryGetFieldValueName(rawValue, out var value))
+                {
+                    rawValue = value;
+                }
+
+#if NET5_0_OR_GREATER
+                Enum.TryParse(underlyingType, rawValue, true, out object? enumResult);
+                result = enumResult;
+#else
+                try
+                {
+                    result = Enum.Parse(underlyingType, rawValue, true);
+                }
+                catch
+                {
+                    result = null;
+                }
+#endif
+            }
+            return result;
+
+            bool TryGetFieldValueName(string rawValue, out string valueName)
+            {
+                valueName = string.Empty;
+                foreach(var field in underlyingType.GetFields())
+                {
+                    if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && rawValue.Equals(attr.Value, StringComparison.Ordinal))
+                    {
+                        valueName = field.Name;
+                        return true;
+                    }
+                }
+                return false;
             }
         }
         /// <summary>
