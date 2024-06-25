@@ -538,7 +538,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         }
 
         [Fact]
-        public async Task SendMethodHandleEnumIfValueIsString()
+        public async Task SendPrimitiveHandleEnumIfValueIsString()
         {
             var mockHandler = new Mock<HttpMessageHandler>();
             var client = new HttpClient(mockHandler.Object);
@@ -570,7 +570,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         }
 
         [Fact]
-        public async Task SendMethodHandleEnumIfValueIsInteger()
+        public async Task SendPrimitiveHandleEnumIfValueIsInteger()
         {
             var mockHandler = new Mock<HttpMessageHandler>();
             var client = new HttpClient(mockHandler.Object);
@@ -602,7 +602,7 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
         }
 
         [Fact]
-        public async Task SendMethodHandleEnumIfValueIsFromEnumMember()
+        public async Task SendPrimitiveHandleEnumIfValueIsFromEnumMember()
         {
             var mockHandler = new Mock<HttpMessageHandler>();
             var client = new HttpClient(mockHandler.Object);
@@ -631,6 +631,38 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary.Tests
             var response = await adapter.SendPrimitiveAsync<TestEnum?>(requestInfo);
 
             Assert.Equal(TestEnum.Value3, response);
+        }
+
+        [Fact]
+        public async Task SendPrimitiveReturnsNullIfValueCannotBeParsedToEnum()
+        {
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var client = new HttpClient(mockHandler.Object);
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("Value0")
+                });
+
+            var mockParseNode = new Mock<IParseNode>();
+            mockParseNode.Setup(x => x.GetStringValue())
+            .Returns("Value0");
+
+            var mockParseNodeFactory = new Mock<IAsyncParseNodeFactory>();
+            mockParseNodeFactory.Setup(x => x.GetRootParseNodeAsync(It.IsAny<string>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(mockParseNode.Object));
+            var adapter = new HttpClientRequestAdapter(_authenticationProvider, mockParseNodeFactory.Object, httpClient: client);
+            var requestInfo = new RequestInformation
+            {
+                HttpMethod = Method.GET,
+                URI = new Uri("https://example.com")
+            };
+
+            var response = await adapter.SendPrimitiveAsync<TestEnum?>(requestInfo);
+
+            Assert.Null(response);
         }
     }
 

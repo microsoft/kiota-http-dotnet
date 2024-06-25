@@ -307,7 +307,19 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                                     break;
                                 }
                             }
-                            result = Enum.Parse(underlyingType, rawValue, true);
+#if NET5_0_OR_GREATER
+                            Enum.TryParse(underlyingType, rawValue, true, out object? enumResult);
+                            result = enumResult;
+#else
+                            try
+                            {
+                                result = Enum.Parse(underlyingType, rawValue, true);
+                            }
+                            catch
+                            {
+                                result = null;
+                            }
+#endif
                         }
                         else
                         {
