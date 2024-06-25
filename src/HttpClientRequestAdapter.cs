@@ -299,27 +299,61 @@ namespace Microsoft.Kiota.Http.HttpClientLibrary
                             Nullable.GetUnderlyingType(modelType) is { IsEnum: true } underlyingType &&
                             rootNode.GetStringValue() is { Length: > 0 } rawValue)
                         {
-                            foreach(var field in underlyingType.GetFields())
+                            if(underlyingType.IsDefined(typeof(FlagsAttribute)))
                             {
-                                if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && rawValue.Equals(attr.Value, StringComparison.Ordinal))
+                                int intValue = 0;
+                                while(rawValue.Length > 0)
                                 {
-                                    rawValue = field.Name;
-                                    break;
-                                }
-                            }
+                                    int commaIndex = rawValue.IndexOf(',');
+                                    var valueName = commaIndex < 0 ? rawValue : rawValue.Substring(0, commaIndex);
+                                    foreach(var field in underlyingType.GetFields())
+                                    {
+                                        if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && valueName.Equals(attr.Value, StringComparison.Ordinal))
+                                        {
+                                            valueName = field.Name;
+                                            break;
+                                        }
+                                    }
 #if NET5_0_OR_GREATER
-                            Enum.TryParse(underlyingType, rawValue, true, out object? enumResult);
-                            result = enumResult;
+                                    if(Enum.TryParse(underlyingType, valueName, true, out var enumPartResult))
+                                        intValue |= (int)enumPartResult!;
 #else
-                            try
-                            {
-                                result = Enum.Parse(underlyingType, rawValue, true);
-                            }
-                            catch
-                            {
-                                result = null;
-                            }
+                                    try
+                                    {
+                                        intValue |= (int)Enum.Parse(underlyingType, valueName, true);
+                                    }
+                                    catch { }
 #endif
+
+                                    rawValue = commaIndex < 0 ? string.Empty : rawValue.Substring(commaIndex + 1);
+                                }
+                                result = intValue > 0 ? Enum.Parse(underlyingType, intValue.ToString(), true) : null;
+                            }
+                            else
+                            {
+                                foreach(var field in underlyingType.GetFields())
+                                {
+                                    if(field.GetCustomAttribute<EnumMemberAttribute>() is { } attr && rawValue.Equals(attr.Value, StringComparison.Ordinal))
+                                    {
+                                        rawValue = field.Name;
+                                        break;
+                                    }
+                                }
+
+#if NET5_0_OR_GREATER
+                                Enum.TryParse(underlyingType, rawValue, true, out object? enumResult);
+                                result = enumResult;
+#else
+                                try
+                                {
+                                    result = Enum.Parse(underlyingType, rawValue, true);
+                                }
+                                catch
+                                {
+                                    result = null;
+                                }
+#endif
+                            }
                         }
                         else
                         {
